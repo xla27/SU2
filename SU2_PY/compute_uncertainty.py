@@ -170,12 +170,13 @@ def main():
     info = SU2.run.CFD(konfig)
     ztate.update(info)
 
+    print(str(info))
+
     # Solution merging
     konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
     info = SU2.run.merge(konfig)
     ztate.update(info)
 
-    print(str(ztate.FUNCTIONS))
 
 
 def sendOutputFiles(config, folderName=""):
