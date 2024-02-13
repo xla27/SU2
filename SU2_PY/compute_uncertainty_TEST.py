@@ -83,60 +83,10 @@ def main():
 
     # prepare config
     config.NUMBER_PART = options.partitions
-    config.SST_OPTIONS = "UQ"
-    config.UQ_DELTA_B = options.beta_delta
-    config.UQ_URLX = options.urlx
-    config.UQ_PERMUTE = "NO"
 
-    # perform eigenvalue perturbations
-    for comp in range(1, 4):
-        print(
-            "\n\n =================== Performing "
-            + str(comp)
-            + "  Component Perturbation =================== \n\n"
-        )
-
-        # make copies
-        konfig = copy.deepcopy(config)
-        ztate = copy.deepcopy(state)
-
-        # set componentality
-        konfig.UQ_COMPONENT = comp
-
-        # send output to a folder
-        folderName = str(comp) + "c/"
-        if os.path.isdir(folderName):
-            shutil.rmtree(folderName)
-        os.mkdir(folderName)
-        sendOutputFiles(konfig, folderName)
-
-        # run su2
-        info = SU2.run.CFD(konfig)
-        ztate.update(info)
-
-        # Solution merging
-        konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
-        info = SU2.run.merge(konfig)
-        ztate.update(info)
-
-    print(
-        "\n\n =================== Performing p1c1 Component Perturbation =================== \n\n"
-    )
-
-    # make copies
+    # make copy
     konfig = copy.deepcopy(config)
-    ztate = copy.deepcopy(state)
-
-    # set componentality
-    konfig.UQ_COMPONENT = 1
-    konfig.UQ_PERMUTE = "YES"
-
-    # send output to a folder
-    folderName = "p1c1/"
-    if os.path.isdir(folderName):
-        shutil.rmtree(folderName)
-    os.mkdir(folderName)
-    sendOutputFiles(konfig, folderName)
+    ztate  = copy.deepcopy(ztate)
 
     # run su2
     info = SU2.run.CFD(konfig)
@@ -147,37 +97,6 @@ def main():
     info = SU2.run.merge(konfig)
     state.update(info)
 
-    print(
-        "\n\n =================== Performing p1c2 Component Perturbation =================== \n\n"
-    )
-
-    # make copies
-    konfig = copy.deepcopy(config)
-    ztate = copy.deepcopy(state)
-
-    # set componentality
-    konfig.UQ_COMPONENT = 2
-    konfig.UQ_PERMUTE = "YES"
-
-    # send output to a folder
-    folderName = "p1c2/"
-    if os.path.isdir(folderName):
-        shutil.rmtree(folderName)
-    os.mkdir(folderName)
-    sendOutputFiles(konfig, folderName)
-
-    # run su2
-    info = SU2.run.CFD(konfig)
-    ztate.update(info)
-
-    # Solution merging
-    konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
-    info = SU2.run.merge(konfig)
-    ztate.update(info)
-    
-    pull, link = state.pullnlink(config)
-    print('pull = ', pull)
-    print('link = ', link)
 
 
 
