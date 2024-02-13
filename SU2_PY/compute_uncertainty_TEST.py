@@ -89,7 +89,7 @@ def main():
     config.UQ_URLX = options.urlx
     config.UQ_PERMUTE = "NO"
 
-    DRAG = []
+    drag = []
 
     # perform eigenvalue perturbations
     for comp in range(1, 4):
@@ -120,7 +120,7 @@ def main():
         info = historyReading(config, konfig)
         ztate.update(info)
 
-        DRAG.append(ztate.FUNCTIONS[str(DRAG)])
+        drag.append(ztate.FUNCTIONS.DRAG)
 
 
     print(
@@ -149,7 +149,7 @@ def main():
     info = historyReading(config, konfig)
     ztate.update(info)
 
-    DRAG.append(ztate.FUNCTIONS[str(DRAG)])
+    drag.append(ztate.FUNCTIONS.DRAG)
 
     print(
         "\n\n =================== Performing p1c2 Component Perturbation =================== \n\n"
@@ -177,10 +177,10 @@ def main():
     info = historyReading(config, konfig)
     ztate.update(info)
 
-    DRAG.append(ztate.FUNCTIONS[str(DRAG)])
+    drag.append(ztate.FUNCTIONS.DRAG)
 
-    print(DRAG)
-    CREDIBILITY = np.max(DRAG) - np.min(DRAG)
+    print(drag)
+    cradibility = np.max(drag) - np.min(drag)
 
 
 
