@@ -175,6 +175,8 @@ def main():
     info = SU2.run.merge(konfig)
     ztate.update(info)
 
+    print(str(ztate))
+
 
 def sendOutputFiles(config, folderName=""):
     config.CONV_FILENAME = folderName + config.CONV_FILENAME
