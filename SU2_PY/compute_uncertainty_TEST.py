@@ -95,7 +95,7 @@ def main():
     info = historyReading(config, konfig)
 
     state.update(info)
-    print(str(state))
+    print(state.FUNCTIONS.DRAG)
 
 
 
