@@ -184,7 +184,6 @@ def main():
     credibility = SU2.util.ordered_bunch()
     credibility[config.CREDIBILITY] = credibility_indicator(perf_vec)
     state.FUNCTIONS.update(credibility)
-    print('Credibility indicator = \t', credibility.value)
     print(state)
     
 
