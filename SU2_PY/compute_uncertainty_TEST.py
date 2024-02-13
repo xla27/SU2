@@ -92,6 +92,27 @@ def main():
     # run su2
     SU2.run.CFD(konfig)
 
+    info = historyReading(config, konfig)
+
+    state.update(info)
+    print(str(state))
+
+
+
+
+def sendOutputFiles(config, folderName=""):
+    config.CONV_FILENAME = folderName + config.CONV_FILENAME
+    # config.BREAKDOWN_FILENAME = folderName + config.BREAKDOWN_FILENAME
+    config.RESTART_FILENAME = folderName + config.RESTART_FILENAME
+    config.VOLUME_FILENAME = folderName + config.VOLUME_FILENAME
+    config.SURFACE_FILENAME = folderName + config.SURFACE_FILENAME
+
+
+def historyReading(config, konfig=None):
+
+    if konfig is None:
+        konfig = copy.deepcopy(config)
+
     # multizone cases
     multizone_cases = SU2.io.get_multizone(konfig)
 
@@ -166,18 +187,7 @@ def main():
 
     SU2.run.merge(konfig)
 
-    state.update(info)
-    print(str(state))
-
-
-
-
-def sendOutputFiles(config, folderName=""):
-    config.CONV_FILENAME = folderName + config.CONV_FILENAME
-    # config.BREAKDOWN_FILENAME = folderName + config.BREAKDOWN_FILENAME
-    config.RESTART_FILENAME = folderName + config.RESTART_FILENAME
-    config.VOLUME_FILENAME = folderName + config.VOLUME_FILENAME
-    config.SURFACE_FILENAME = folderName + config.SURFACE_FILENAME
+    return info
 
 
 if __name__ == "__main__":
