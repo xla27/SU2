@@ -287,6 +287,9 @@ def shape_optimization(
     if optimization == "POWELL":
         SU2.opt.POWELL(project, x0, xb, its, accu)
 
+    print(str(project))
+    print(project.results)
+
 
     # rename project file
     if projectname:
