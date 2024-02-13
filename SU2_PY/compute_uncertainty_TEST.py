@@ -180,7 +180,8 @@ def main():
     drag.append(ztate.FUNCTIONS.DRAG)
 
     print(drag)
-    cradibility = np.max(drag) - np.min(drag)
+    credibility = np.max(drag) - np.min(drag)
+    print(credibility)
 
 
 
