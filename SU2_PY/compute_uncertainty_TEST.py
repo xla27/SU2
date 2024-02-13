@@ -88,8 +88,9 @@ def main():
     config.UQ_DELTA_B = options.beta_delta
     config.UQ_URLX = options.urlx
     config.UQ_PERMUTE = "NO"
-
-    drag = []
+    
+    perf_key = config.CREDIBILITY
+    perf_vec = []
 
     # perform eigenvalue perturbations
     for comp in range(1, 4):
@@ -120,7 +121,7 @@ def main():
         info = historyReading(config, konfig)
         ztate.update(info)
 
-        drag.append(ztate.FUNCTIONS.DRAG)
+        perf_vec.append(ztate.FUNCTIONS[perf_key])
 
 
     print(
@@ -149,7 +150,7 @@ def main():
     info = historyReading(config, konfig)
     ztate.update(info)
 
-    drag.append(ztate.FUNCTIONS.DRAG)
+    perf_vec.append(ztate.FUNCTIONS[perf_key])
 
     print(
         "\n\n =================== Performing p1c2 Component Perturbation =================== \n\n"
@@ -177,11 +178,14 @@ def main():
     info = historyReading(config, konfig)
     ztate.update(info)
 
-    drag.append(ztate.FUNCTIONS.DRAG)
+    perf_vec.append(ztate.FUNCTIONS[perf_key])
 
-    print(drag)
-    credibility = np.max(drag) - np.min(drag)
-    print(credibility)
+    print('Performace vector =\t', perf_vec)
+    credibility = SU2.util.ordered_bunch()
+    credibility[config.CREDIBILITY.key] = credibility_indicator(perf_vec)
+    state.FUNCTIONS.update(credibility)
+    print('Credibility indicator = \t', credibility.value)
+    
 
 
 
@@ -274,6 +278,10 @@ def historyReading(config, konfig=None):
     SU2.run.merge(konfig)
 
     return info
+
+def credibility_indicator(performance_vec):
+    delta_p = np.max(performance_vec) - np.min(performance_vec)
+    return delta_p
 
 
 if __name__ == "__main__":
