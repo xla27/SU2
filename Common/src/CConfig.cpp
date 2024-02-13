@@ -2748,6 +2748,9 @@ void CConfig::SetConfig_Options() {
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
 
+  /* DESCRIPTION: Credibility variable*/
+  addPythonOption("CREDIBILITY");
+
   /* DESCRIPTION: Gradient method */
   addPythonOption("GRADIENT_METHOD");
 
