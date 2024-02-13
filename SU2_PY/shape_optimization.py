@@ -288,7 +288,7 @@ def shape_optimization(
         SU2.opt.POWELL(project, x0, xb, its, accu)
 
     print(str(project))
-    print(str(project.state))
+    print(project.state)
 
 
     # rename project file
