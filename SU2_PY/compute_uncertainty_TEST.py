@@ -86,7 +86,7 @@ def main():
 
     # make copy
     konfig = copy.deepcopy(config)
-    ztate  = copy.deepcopy(ztate)
+    ztate  = copy.deepcopy(state)
 
     # run su2
     info = SU2.run.CFD(konfig)
