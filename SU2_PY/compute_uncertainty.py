@@ -174,8 +174,10 @@ def main():
     konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
     info = SU2.run.merge(konfig)
     ztate.update(info)
-
-    print(info)
+    
+    pull, link = state.pullnlink(config)
+    print('pull = ', pull)
+    print('link = ', link)
 
 
 
