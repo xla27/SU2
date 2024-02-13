@@ -83,6 +83,7 @@ def main():
 
     # prepare config
     config.NUMBER_PART = options.partitions
+    config.NZONES      = 1
 
     # make copy
     konfig = copy.deepcopy(config)
