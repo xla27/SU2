@@ -89,13 +89,84 @@ def main():
     ztate  = copy.deepcopy(state)
 
     # run su2
-    info = SU2.run.CFD(konfig)
-    ztate.update(info)
+    SU2.run.CFD(konfig)
 
-    # Solution merging
-    konfig.SOLUTION_FILENAME = konfig.RESTART_FILENAME
-    info = SU2.run.merge(konfig)
+    # multizone cases
+    multizone_cases = SU2.io.get_multizone(konfig)
+
+    # merge
+    konfig["SOLUTION_FILENAME"] = konfig["RESTART_FILENAME"]
+    if "FLUID_STRUCTURE_INTERACTION" in multizone_cases:
+        konfig["SOLUTION_FILENAME"] = konfig["RESTART_FILENAME"]
+
+    # filenames
+    plot_format = konfig.get("TABULAR_FORMAT", "CSV")
+    plot_extension = SU2.io.get_extension(plot_format)
+
+    # adapt the history_filename, if a restart solution is chosen
+    # check for 'RESTART_ITER' is to avoid forced restart situation in "compute_polar.py"...
+    if konfig.get("RESTART_SOL", "NO") == "YES" and konfig.get("RESTART_ITER", 1) != 1:
+        if konfig.get("CONFIG_LIST", []) != []:
+            konfig[
+                "CONV_FILENAME"
+            ] = "config_CFD"  # master cfg is always config_CFD. Hardcoded names are prob nt ideal.
+        restart_iter = "_" + str(konfig["RESTART_ITER"]).zfill(5)
+        history_filename = konfig["CONV_FILENAME"] + restart_iter + plot_extension
+    else:
+        if konfig.get("CONFIG_LIST", []) != []:
+            konfig["CONV_FILENAME"] = "config_CFD"
+        history_filename = konfig["CONV_FILENAME"] + plot_extension
+
+    special_cases = SU2.io.get_specialCases(konfig)
+
+    # averaging final iterations
+    final_avg = config.get("ITER_AVERAGE_OBJ", 0)
+    # get chosen windowing function, default is square
+    wnd_fct = config.get("WINDOW_FUNCTION", "SQUARE")
+
+    # get history and objectives
+    history = SU2.io.read_history(history_filename, config.NZONES)
+    aerodynamics = SU2.io.read_aerodynamics(
+        history_filename, config.NZONES, special_cases, final_avg, wnd_fct
+    )
+
+    # update super config
+    config.update({"MATH_PROBLEM": konfig["MATH_PROBLEM"]})
+
+    # info out
+    info = SU2.io.State()
+    info.FUNCTIONS.update(aerodynamics)
+    info.FILES.DIRECT = konfig["RESTART_FILENAME"]
+    if "INV_DESIGN_CP" in special_cases:
+        info.FILES.TARGET_CP = "TargetCp.dat"
+    if "INV_DESIGN_HEATFLUX" in special_cases:
+        info.FILES.TARGET_HEATFLUX = "TargetHeatFlux.dat"
+    info.HISTORY.DIRECT = history
+
+    """If WINDOW_CAUCHY_CRIT is activated and the time marching converged before the final time has been reached,
+       store the information for the adjoint run"""
+    if config.get("WINDOW_CAUCHY_CRIT", "NO") == "YES" and config.TIME_MARCHING != "NO":
+        konfig["TIME_ITER"] = int(
+            info.HISTORY.DIRECT.Time_Iter[-1] + 1
+        )  # update the last iteration
+        if konfig["UNST_ADJOINT_ITER"] > konfig["TIME_ITER"]:
+            konfig["ITER_AVERAGE_OBJ"] = max(
+                0,
+                konfig["ITER_AVERAGE_OBJ"]
+                - (konfig["UNST_ADJOINT_ITER"] - konfig["TIME_ITER"]),
+            )
+            konfig["UNST_ADJOINT_ITER"] = konfig["TIME_ITER"]
+
+        info["WND_CAUCHY_DATA"] = {
+            "TIME_ITER": konfig["TIME_ITER"],
+            "UNST_ADJOINT_ITER": konfig["UNST_ADJOINT_ITER"],
+            "ITER_AVERAGE_OBJ": konfig["ITER_AVERAGE_OBJ"],
+        }
+
+    SU2.run.merge(konfig)
+
     state.update(info)
+    print(str(state))
 
 
 
