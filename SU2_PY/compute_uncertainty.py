@@ -175,7 +175,7 @@ def main():
     info = SU2.run.merge(konfig)
     ztate.update(info)
 
-    print(str(ztate))
+    print(str(ztate.FUNCTIONS))
 
 
 def sendOutputFiles(config, folderName=""):
