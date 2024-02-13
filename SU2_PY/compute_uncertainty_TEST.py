@@ -185,6 +185,7 @@ def main():
     credibility[config.CREDIBILITY.key] = credibility_indicator(perf_vec)
     state.FUNCTIONS.update(credibility)
     print('Credibility indicator = \t', credibility.value)
+    print(state)
     
 
 
