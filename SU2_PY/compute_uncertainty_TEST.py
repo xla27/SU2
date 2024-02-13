@@ -85,6 +85,9 @@ def main():
     config.NUMBER_PART = options.partitions
     config.NZONES      = 1
 
+    # credibility key
+    aero_key = config.CREDIBILITY
+
     # make copy
     konfig = copy.deepcopy(config)
     ztate  = copy.deepcopy(state)
@@ -95,7 +98,7 @@ def main():
     info = historyReading(config, konfig)
 
     state.update(info)
-    print(state.FUNCTIONS.DRAG)
+    print(state.FUNCTIONS[aero_key])
 
 
 
