@@ -225,6 +225,7 @@ class Project(object):
             #: if updated
 
         #: with redirect folder
+        print(self.state)
 
         # done, return output
         return vals
