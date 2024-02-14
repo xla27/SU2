@@ -303,6 +303,20 @@ per_surface_map = {
     "EFFICIENCY": "CL/CD",
 }
 
+# cred-surface functions
+cred_surface_map = {
+    "CREDIBILITY_LIFT": "Cred_CL",
+    "CREDIBILITY_DRAG": "Cred_CD",
+    "CREDIBILITY_SIDEFORCE": "Cred_CSF",
+    "CREDIBILITY_MOMENT_X": "Cred_CMx",
+    "CREDIBILITY_MOMENT_Y": "Cred_CMy",
+    "CREDIBILITY_MOMENT_Z": "Cred_CMz",
+    "CREDIBILITY_FORCE_X": "Cred_CFx",
+    "CREDIBILITY_FORCE_Y": "Cred_CFy",
+    "CREDIBILITY_FORCE_Z": "Cred_CFz",
+    "CREDIBILITY_EFFICIENCY": "Cred_CL/CD",
+}
+
 # -------------------------------------------------------------------
 #  Include per-surface output from History File
 # -------------------------------------------------------------------
