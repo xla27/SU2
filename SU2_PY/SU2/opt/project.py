@@ -486,7 +486,7 @@ class Project(object):
         for design in self.designs:
             for key in results.FILES.keys():
                 if key in design.state.FILES:
-                    new_file = self.design.FILES[key]
+                    new_file = design.state.FILES[key]
                     results.FILES[key].append(new_file)
             break
 
