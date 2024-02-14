@@ -225,12 +225,8 @@ class Project(object):
             #: if updated
 
         #: with redirect folder
-        # ALBERTO: adding the FILES key to results to have state inherit
-        # results and FILES
-        results = self.results
-        if 'FILES' not in results.keys():
-            results.FILES = self.state.FILES
-        self.state = results
+        # ALBERTO: updating the self.state to have a history of results
+        self.state.update(self.results)
         print(self.state)
 
         # done, return output
@@ -424,7 +420,7 @@ class Project(object):
 
         results = su2io.State()
         results.VARIABLES = []
-        del results.FILES
+        #del results.FILES    ALBERTO
         filename = self.results_filename
 
         n_dv = 0
@@ -479,6 +475,22 @@ class Project(object):
                         new_func = default
                     results.HISTORY[TYPE][key].append(new_func)
         #: for each design
+        
+
+        # ALBERTO: populate fields
+        for i, design in enumerate(self.designs):
+            for key in design.state.FILES.keys():
+                results.FILES[key] = []
+            break
+        # ALBERTO: populate results
+        for design in self.designs:
+            for key in results.FILES.keys():
+                if key in design.state.FILES:
+                    new_file = self.design.FILES[key]
+                    results.FILES[key].append(new_file)
+            break
+
+
 
         # save
         self.results = results
