@@ -225,7 +225,12 @@ class Project(object):
             #: if updated
 
         #: with redirect folder
-        self.state = self.results
+        # ALBERTO: adding the FILES key to results to have state inherit
+        # results and FILES
+        results = self.results
+        if 'FILES' not in results.keys():
+            results.FILES = self.state.FILES
+        self.state = results
         print(self.state)
 
         # done, return output
