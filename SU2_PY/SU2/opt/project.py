@@ -225,9 +225,6 @@ class Project(object):
             #: if updated
 
         #: with redirect folder
-        # ALBERTO: updating the self.state to have a history of results
-        self.state.update(self.results)
-        print(self.state)
 
         # done, return output
         return vals
@@ -476,22 +473,6 @@ class Project(object):
                     results.HISTORY[TYPE][key].append(new_func)
         #: for each design
         
-
-        # ALBERTO: populate fields
-        for i, design in enumerate(self.designs):
-            for key in design.state.FILES.keys():
-                results.FILES[key] = []
-            break
-        # ALBERTO: populate results
-        for design in self.designs:
-            for key in results.FILES.keys():
-                if key in design.state.FILES:
-                    new_file = design.state.FILES[key]
-                    results.FILES[key].append(new_file)
-            break
-
-
-
         # save
         self.results = results
         su2io.save_data(filename, results)
