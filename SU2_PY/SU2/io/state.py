@@ -40,6 +40,7 @@ from ..io import (
     Config,
     expand_multipoint,
     optnames_multi,
+    cred_surface_map,
 )
 from ..util import bunch
 from ..util import ordered_bunch
@@ -226,6 +227,13 @@ class State(ordered_bunch):
                 for elem in value:
                     if elem:
                         link.append(elem)
+            elif "EPM" in key:
+                # EPM files
+                value = expand_zones(value, config)
+                value = expand_time(value, config)
+                for elem in value:
+                    if elem:
+                        link.append(elem)
             # elif key == 'STABILITY':
             # pass
             # copy all other files
@@ -288,8 +296,10 @@ class State(ordered_bunch):
             def_objs = config["OPT_OBJECTIVE"]
             objectives = def_objs.keys()
             multipoint = any(elem in optnames_multi for elem in objectives)
+            credibility = any(elem in cred_surface_map.keys() for elem in cred_surface_map.keys())
         else:
             multipoint = False
+            credibility = False
 
         def register_file(label, filename):
             if not label in files:
@@ -307,7 +317,7 @@ class State(ordered_bunch):
                         files[label] = filename
                         print("Found: %s" % filename)
 
-                elif label.split("_")[0] in ["MULTIPOINT"]:
+                elif label.split("_")[0] in ["MULTIPOINT", "EPM"]:
                     # if multipoint, list of files needs to be added
                     file_list = []
                     for name in filename:
@@ -367,6 +377,10 @@ class State(ordered_bunch):
                     name_list = expand_multipoint(direct_name, config)
                     name_list = expand_zones(name_list, config)
                     register_file("MULTIPOINT_DIRECT", name_list)
+                if credibility:
+                    name_list = expand_multipoint(direct_name, config)
+                    name_list = expand_zones(name_list, config)
+                    register_file("EPM", name_list)
 
             # flow meta data file
             if restart:
