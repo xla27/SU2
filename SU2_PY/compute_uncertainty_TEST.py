@@ -182,7 +182,7 @@ def main():
 
     print('Performace vector =\t', perf_vec)
     credibility = SU2.util.ordered_bunch()
-    credibility[config.CREDIBILITY + ' ' + 'CREDIBILITY'] = credibility_indicator(perf_vec)
+    credibility[config.CREDIBILITY + '_' + 'CREDIBILITY'] = credibility_indicator(perf_vec)
     state.FUNCTIONS.update(credibility)
     print(state)
     
