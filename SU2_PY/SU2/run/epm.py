@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-## \file direct.py
-#  \brief python package for running epm solutions
-#  \author T. Lukaczyk, F. Palacios
+## \file epm.py
+#  \brief python package for performing model-form UQ for SST turbulence model
+#  \author J. Mukhopadhaya & A. Perlini
 #  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
