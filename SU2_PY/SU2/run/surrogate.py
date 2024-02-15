@@ -71,7 +71,7 @@ def surrogate(config):
     konfig = copy.deepcopy(config)
 
     # checking the function
-    func_out_name = konfig["OBJECTIVE_FUNCTIONS"]
+    func_out_name = konfig["OBJECTIVE_FUNCTION"]
 
     # design space definition
     def_dv = konfig.DEFINITION_DV
@@ -105,21 +105,28 @@ def surrogate(config):
     the GP is kept isotropic, if they are greater or equal than n_dv the process becomes
     anisotropic
     """
+    n_data = yt.shape[0]
+
     theta0 = [1e-2]
-    if yt.shape[0] >= n_dv:
+    if n_data >= n_dv:
         theta0 = [1e-2] * n_dv 
     
     design_space = DesignSpace([FloatVariable(xb_low, xb_up)])
 
     sm = KRG(design_space=design_space, theta0=theta0)
     sm.set_training_values(xt, yt)
-    sm.train()
 
-    # querying the derivative at the last xt
-    xtest = xt[-1,:]
-    grad = []
-    for i in n_dv:
-        grad.append(float(sm.predict_derivatives(xtest, i).item()))
+    if n_data == 1:
+        grad = [0.0] * n_dv
+
+    else:
+        sm.train()
+
+        # querying the derivative at the last xt
+        xtest = xt[-1,:]
+        grad = []
+        for i in n_dv:
+            grad.append(float(sm.predict_derivatives(xtest, i).item()))
     
     # files out
     surr_title = "SURR_GRAD_" + func_out_name
