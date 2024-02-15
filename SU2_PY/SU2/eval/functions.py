@@ -57,7 +57,7 @@ def function(func_name, config, state=None):
         Redundancy if state.FUNCTIONS is not empty.
 
     Executes in:
-        ./DIRECT or ./GEOMETRY
+        ./DIRECT or ./GEOMETRY or ./EPM
 
     Inputs:
         func_name - SU2 objective function name or 'ALL'
@@ -95,6 +95,8 @@ def function(func_name, config, state=None):
                 or su2io.historyOutFields[func_name]["TYPE"] == "D_COEFFICIENT"
             ):
                 aerodynamics(config, state)
+            elif (su2io.historyOutFields[func_name]["TYPE"] == "CREDIBILITY"):
+                credibility(config, state)
 
         # Stability
         elif func_name in su2io.optnames_stab:
@@ -129,6 +131,10 @@ def function(func_name, config, state=None):
         marker = config["OPT_OBJECTIVE"][func_name_string]["MARKER"]
         if func_name_string in su2io.per_surface_map:
             name = su2io.per_surface_map[func_name_string] + "_" + marker
+            if name in state["FUNCTIONS"]:
+                func_out = state["FUNCTIONS"][name]
+        if func_name_string in su2io.cred_surface_map:
+            name = su2io.cred_surface_map[func_name_string] + "_" + marker
             if name in state["FUNCTIONS"]:
                 func_out = state["FUNCTIONS"][name]
 
@@ -328,6 +334,240 @@ def aerodynamics(config, state=None):
 
 
 #: def aerodynamics()
+
+
+# ----------------------------------------------------------------------
+#  Credibility Functions
+# ----------------------------------------------------------------------
+
+
+def credibility(config, state=None):
+    """vals = SU2.eval.credibility(config,state=None)
+
+    Evaluates credibility with the following:
+              SU2.run.deform()
+        SU2.run.epm()
+
+    Assumptions:
+        Config is already setup for deformation.
+        Mesh may or may not be deformed.
+        Updates config and state by reference.
+        Redundancy if state.FUNCTIONS is not empty.
+
+    Executes in:
+        ./EPM
+
+    Inputs:
+        config    - an SU2 config
+        state     - optional, an SU2 state
+
+    Outputs:
+        Bunch() of functions with keys of objective function names
+        and values of objective function floats.
+    """
+
+    # ----------------------------------------------------
+    #  Initialize
+    # ----------------------------------------------------
+
+    # initialize
+    state = su2io.State(state)
+
+    # Make sure to output aerodynamic coeff.
+    if not "AERO_COEFF" in config["HISTORY_OUTPUT"]:
+        config["HISTORY_OUTPUT"].append("AERO_COEFF")
+
+    if not "MESH" in state.FILES:
+        state.FILES.MESH = config["MESH_FILENAME"]
+    special_cases = su2io.get_specialCases(config)
+
+    # console output
+    if config.get("CONSOLE", "VERBOSE") in ["QUIET", "CONCISE"]:
+        log_epm = ["log_epm_1c.out", "log_epm_2c.out", "log_epm_3c.out", "log_epm_p1c1.out", "log_epm_p1c2.out"]
+    else:
+        log_epm = None
+
+    # ----------------------------------------------------
+    #  Update Mesh
+    # ----------------------------------------------------
+
+    # does decomposition and deformation
+    info = update_mesh(config, state)
+
+    # ----------------------------------------------------
+    #  Adaptation (not implemented)
+    # ----------------------------------------------------
+
+    # if not state.['ADAPTED_FUNC']:
+    #    config = su2run.adaptation(config)
+    #    state['ADAPTED_FUNC'] = True
+
+    # ----------------------------------------------------
+    #  EPM Solution
+    # ----------------------------------------------------
+    opt_names = []
+    for key in su2io.historyOutFields:
+        if su2io.historyOutFields[key]["TYPE"] == "CREDIBILITY":
+            opt_names.append(key)
+
+    # redundancy check
+    epm_done = all([key in state.FUNCTIONS for key in opt_names])
+    if epm_done:
+        # return aerodynamic function values
+        credi = su2util.ordered_bunch()
+        for key in opt_names:
+            if key in state.FUNCTIONS:
+                credi[key] = state.FUNCTIONS[key]
+        return copy.deepcopy(credi)
+    #: if redundant
+
+    # files to pull
+    files = state.FILES
+    pull = []
+    link = []
+
+    # files: mesh
+    name = files["MESH"]
+    name = su2io.expand_part(name, config)
+    link.extend(name)
+
+    pull.extend(config.get("CONFIG_LIST", []))
+
+    # files: restarts
+    if (
+        config.get("TIME_DOMAIN", "NO") == "YES"
+        and config.get("RESTART_SOL", "NO") == "YES"
+    ):
+        if "RESTART_FILE_1" in files:  # not the case for directdiff restart
+            name = files["RESTART_FILE_1"]
+            name = su2io.expand_part(name, config)
+            link.extend(name)
+        if "RESTART_FILE_2" in files:  # not the case for 1st order time stepping
+            name = files["RESTART_FILE_2"]
+            name = su2io.expand_part(name, config)
+            link.extend(name)
+
+    if "FLOW_META" in files:
+        pull.append(files["FLOW_META"])
+
+    # files: epm solution
+    if "EPM" in files:
+        name = files["EPM"]
+        name = su2io.expand_zones(name, config)
+        name = su2io.expand_time(name, config)
+        link.extend(name)
+        ##config['RESTART_SOL'] = 'YES' # don't override config file
+    else:
+        if (
+            config.get("TIME_DOMAIN", "NO") != "YES"
+        ):  # rules out steady state optimization special cases.
+            config["RESTART_SOL"] = "NO"  # for shape optimization with restart files.
+
+    # files: target equivarea distribution
+    if "EQUIV_AREA" in special_cases and "TARGET_EA" in files:
+        pull.append(files["TARGET_EA"])
+
+    # files: target pressure distribution
+    if "INV_DESIGN_CP" in special_cases and "TARGET_CP" in files:
+        pull.append(files["TARGET_CP"])
+
+    # files: target heat flux distribution
+    if "INV_DESIGN_HEATFLUX" in special_cases and "TARGET_HEATFLUX" in files:
+        pull.append(files["TARGET_HEATFLUX"])
+    
+    # make a copy
+    konfig = copy.deepcopy(config)
+    ztates = []
+
+    # Setting EPM module
+    konfig.SST_OPTIONS = "UQ"
+    konfig.UQ_DELTA_B = 1.0
+    konfig.UQ_URLX = 0.1
+
+    
+    with redirect_folder("EPM", pull, link) as push:
+        konfig.dump("config_EPM.cfg")
+
+
+    # perturbations and folders  
+    folder = ["EPM/1c", "EPM/2c", "EPM/3c", "EPM/p1c1", "EPM/p1c2"]
+    uq = [[1, "NO"], [2, "NO"], [3, "NO"], [1, "YES"], [2, "YES"]]
+
+    for i in range(0,5):
+        
+        # output redirection
+        with redirect_folder(folder, pull, link) as push:
+            # make copies
+            kkonfig = copy.deepcopy(konfig)
+            ztate = copy.deepcopy(state)
+
+            # set perturbation
+            kkonfig.UQ_COMPONENT = uq[i,0]
+            kkonfig.UQ_PERMUTE = uq[i,1]
+            with redirect_output(log_epm[i]):
+
+                # # RUN DIRECT SOLUTION # #
+                info = su2run.epm(kkonfig)
+
+                """
+                If the time convergence criterion was activated, we have less time iterations.
+                Store the changed values of TIME_ITER, ITER_AVERAGE_OBJ and UNST_ADJOINT_ITER in
+                info.WND_CAUCHY_DATA"""
+                if (
+                    kkonfig.get("WINDOW_CAUCHY_CRIT", "NO") == "YES"
+                    and kkonfig.TIME_MARCHING != "NO"
+                ):  # Tranfer Convergence Data, if necessary
+                    kkonfig["TIME_ITER"] = info.WND_CAUCHY_DATA["TIME_ITER"]
+                    kkonfig["ITER_AVERAGE_OBJ"] = info.WND_CAUCHY_DATA["ITER_AVERAGE_OBJ"]
+                    kkonfig["UNST_ADJOINT_ITER"] = info.WND_CAUCHY_DATA["UNST_ADJOINT_ITER"]
+
+                su2io.restart2solution(kkonfig, info)
+                ztate.update(info)
+
+                # direct files to push
+                name = info.FILES["EPM"]
+                name = su2io.expand_zones(name, kkonfig)
+                name = su2io.expand_time(name, kkonfig)
+                push.extend(name)
+
+                # pressure files to push
+                if "TARGET_CP" in info.FILES:
+                    push.append(info.FILES["TARGET_CP"])
+
+                # heat flux files to push
+                if "TARGET_HEATFLUX" in info.FILES:
+                    push.append(info.FILES["TARGET_HEATFLUX"])
+
+                if "FLOW_META" in info.FILES:
+                    push.append(info.FILES["FLOW_META"])
+
+        # Updating performance parameters
+        su2io.update_persurface(kkonfig, ztate)
+
+        ztates.append(ztate)
+
+
+    # Computing credibility coefficients
+    creds = su2util.ordered_bunch()
+    for ztate in ztates:
+        per_vec = []
+        for key in su2io.per_surface_map:
+            per_vec.append(ztate["FUNCTIONS"][key])
+        state['FUNCTIONS']['CREDIBILITY_' + key] = max(per_vec) - min(per_vec)
+        creds['CREDIBILITY_' + key] = state['FUNCTIONS']['CREDIBILITY_' + key]
+        
+        # ztate.FILES.DIRECT is a single file, while EPM is a list of files
+        state.FILES.EPM.append(ztate.FILES.DIRECT)
+    
+    dv_vector = state.design_vector()
+    su2io.write_epm('epm.dat', creds, dv_vector)
+        
+    # CAPIRE COME PRODURRE IL DIZIONARIO HISTORY.EPM IMITANDO L'UTILIZZO DI read_history() E read_plot()
+    # PROBABILMENTE BISOGNA IMITARE COME SI FA IN MULTIPOINT, MA FORSE NON E' NECESSARIA INSERIRE L'HISTORY
+        
+    # VERIFICARE SE BISOGNA FARE L'UPDATE DELLO STATE PER TUTTI GLI ALTRI CAMPI, ANCHE SE PROBABILMENTE E' GIA'
+    # POPOLATO DALLE ALTRE FUNCTION EVALUATIONS DELLO STESSO DESIGN STEP
+    return creds
 
 
 # ----------------------------------------------------------------------
