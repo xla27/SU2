@@ -9,3 +9,4 @@ from .deform import deform
 from .geometry import geometry
 from .merge import merge
 from .epm import epm
+from .surrogate import surrogate
