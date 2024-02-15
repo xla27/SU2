@@ -560,7 +560,9 @@ def credibility(config, state=None):
         state.FILES.EPM.append(ztate.FILES.DIRECT)
     
     dv_vector = state.design_vector()
-    su2io.write_epm('epm.dat', creds, dv_vector)
+    
+    with redirect_folder("EPM", pull, link) as push:
+        su2io.write_epm('epm.dat', creds, dv_vector)
         
     # CAPIRE COME PRODURRE IL DIZIONARIO HISTORY.EPM IMITANDO L'UTILIZZO DI read_history() E read_plot()
     # PROBABILMENTE BISOGNA IMITARE COME SI FA IN MULTIPOINT, MA FORSE NON E' NECESSARIA INSERIRE L'HISTORY
