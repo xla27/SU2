@@ -1261,3 +1261,60 @@ def restart2solution(config, state={}):
 
     else:
         raise Exception("unknown math problem")
+
+
+def write_epm(filename, creds, dv_vector):
+    """write_epm(filename, config, creds, dv_vector)
+    writes a .dat file containing all the credibility
+    coefficients together with the design variables vector
+    to be read from the surrogate.py script for gradient
+    surrogates
+    """
+    epm_file = open(filename, "w")
+
+    epm_file.write("INDICATORS")
+    for key in creds.keys():
+        epm_file.write(key + "\t\t" + str(creds[key]) + "\n")
+    epm_file.write("\n")
+    
+    epm_file.write("DESIGN VARIABLES")
+    for i, dv in enumerate(dv_vector):
+        epm_file.write(str(i) + "\t\t" + str(dv) + "\n")
+    epm_file.write("\n")
+
+    epm_file.close()
+
+    return
+
+
+def read_epm(filename, func_out_name):
+    """read_epm(filename, func_out) reads a .dat file
+    (typically epm.dat) and outputs the value of the indicators
+    given by func_out and the set of design variables"""
+
+    # open file
+    epm_file = open(filename)
+
+    func = []
+    dv_vec = []
+
+    # read credibility indicator
+    for line in epm_file:
+        if line.strip()[0] == func_out_name:
+            func.append(float(line.strip()[1]))
+            continue
+        if line.strip()[0] == "DESIGN VARIABLES":
+            break
+
+    # read dv vector
+    for line in epm_file:
+        dv_vec.append(float(line.strip()[1]))
+
+    return func, dv_vec
+
+    
+        
+
+
+
+
