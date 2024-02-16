@@ -89,7 +89,8 @@ def surrogate(config):
 
     xt = np.empty((0, n_dv))
     yt = np.array([])
-
+    
+    isPath = True
     while isPath:
         path = "../../DSN_" + str(i).zfill(3) + "/EPM"
         isPath = os.path.exists(path)
