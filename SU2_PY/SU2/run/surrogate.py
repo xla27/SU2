@@ -140,7 +140,7 @@ def surrogate(config):
     info = su2io.State()
     info.HISTORY[surr_title] = raw_gradient
 
-    gradients = {objective[0]: raw_gradient}
+    gradients = {objective: raw_gradient}
     info.GRADIENTS.update(gradients)
 
     # writing the surrogate
