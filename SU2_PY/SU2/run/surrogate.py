@@ -98,6 +98,9 @@ def surrogate(config):
         with su2io.redirect_folder(path, pull, link) as push:
 
             func, dv_vec = su2io.tools.read_epm("epm.dat", func_out_name)
+            
+            print(func)
+            print(dv_vec)
         
         xt = np.vstack((xt, np.array(dv_vec)))
         yt = np.append(yt, func)
