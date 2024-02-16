@@ -1380,7 +1380,7 @@ def surrogate(func_name, config, state=None):
             # push.extend(name)
 
     #: with output redirection
-
+    print(state)
     # return output
     grads = su2util.ordered_bunch()
     grads[func_output] = state["GRADIENTS"][func_output]
