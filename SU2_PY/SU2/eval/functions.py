@@ -549,6 +549,7 @@ def credibility(config, state=None):
 
     # Computing credibility coefficients
     creds = su2util.ordered_bunch()
+    epm_files = su2io.State()
     for ztate in ztates:
         per_vec = []
         for key in su2io.per_surface_map:
@@ -557,7 +558,10 @@ def credibility(config, state=None):
         creds['CREDIBILITY_' + key] = state['FUNCTIONS']['CREDIBILITY_' + key]
         
         # ztate.FILES.DIRECT is a single file, while EPM is a list of files
-        state.FILES.EPM.append(ztate.FILES.DIRECT)
+        epm_files.FILES.EPM.append(ztate.FILES.DIRECT)
+    
+    state.update(epm_files)
+    print(state)
     
     dv_vector = state.design_vector()
     
