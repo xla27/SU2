@@ -1274,7 +1274,7 @@ def directdiff(config, state=None):
 #: def directdiff()
 
 # ----------------------------------------------------------------------
-#  Adjoint Gradients
+#  Surrogate Gradients
 # ----------------------------------------------------------------------
 
 
@@ -1373,11 +1373,11 @@ def surrogate(func_name, config, state=None):
 
             state.update(info)
 
-            # solution files to push
-            name = state.FILES[SURR_GRAD_NAME]
-            name = su2io.expand_zones(name, konfig)
-            name = su2io.expand_time(name, konfig)
-            push.extend(name)
+            # # solution files to push
+            # name = state.FILES[SURR_GRAD_NAME]
+            # name = su2io.expand_zones(name, konfig)
+            # name = su2io.expand_time(name, konfig)
+            # push.extend(name)
 
     #: with output redirection
 
