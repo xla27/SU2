@@ -95,15 +95,15 @@ def surrogate(config):
         path = "../../DSN_" + str(i).zfill(3) + "/EPM"
         isPath = os.path.exists(path)
 
-        with su2io.redirect_folder(path, pull, link) as push:
+        if isPath:
 
-            func, dv_vec = su2io.tools.read_epm("epm.dat", func_out_name)
+            with su2io.redirect_folder(path, pull, link) as push:
+
+                func, dv_vec = su2io.tools.read_epm("epm.dat", func_out_name)
+                
             
-            print(func)
-            print(dv_vec)
-        
-        xt = np.vstack((xt, np.array(dv_vec)))
-        yt = np.append(yt, func)
+            xt = np.vstack((xt, np.array(dv_vec)))
+            yt = np.append(yt, func)
 
         i += 1
     
