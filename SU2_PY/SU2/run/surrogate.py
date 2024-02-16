@@ -73,6 +73,12 @@ def surrogate(config):
     # checking the function
     objective = konfig["OBJECTIVE_FUNCTION"]
 
+    # verbose
+    if konfig.get("CONSOLE", "VERBOSE") in ["QUIET", "CONCISE"]:
+        print_global = True
+    else:
+        print_global = False
+
     # design space definition
     def_dv = konfig.DEFINITION_DV
     n_dv = sum(def_dv["SIZE"])
@@ -117,9 +123,15 @@ def surrogate(config):
     if n_data >= n_dv:
         theta0 = [1e-2] * n_dv 
     
-    design_space = DesignSpace([FloatVariable(xb_low, xb_up)])
-
-    sm = KRG(design_space=design_space, theta0=theta0)
+    # design space
+    des_sp = []
+    for i in range(0, n_dv):
+        des_sp.append(FloatVariable(xb_low[i], xb_up[i]))
+    design_space = DesignSpace(des_sp)
+    
+        
+    # GP instantiation
+    sm = KRG(design_space=design_space, theta0=theta0, print_global=print_global)
     sm.set_training_values(xt, yt)
 
     if n_data == 1:
@@ -128,16 +140,19 @@ def surrogate(config):
     else:
         sm.train()
 
+        # derivatives computation
+        derivatives = np.empty((n_dv, 0))
+        for i in range(0, n_dv):
+            derivatives = np.hstack((derivatives, sm.predict_derivatives(xt, i)))
+
         # querying the derivative at the last xt
-        xtest = xt[-1,:]
-        raw_gradient = []
-        for i in n_dv:
-            raw_gradient.append(float(sm.predict_derivatives(xtest, i).item()))
+        raw_gradient = derivatives[-1,:]
     
     # files out
     surr_title = "SURR_GRAD_" + objective
     # info out
     info = su2io.State()
+
 
     gradients = {objective: raw_gradient}
     info.GRADIENTS.update(gradients)
