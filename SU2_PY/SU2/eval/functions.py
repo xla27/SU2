@@ -556,8 +556,6 @@ def credibility(config, state=None):
         state['FUNCTIONS']['CREDIBILITY_' + key] = max(per_vec) - min(per_vec)
         creds['CREDIBILITY_' + key] = state['FUNCTIONS']['CREDIBILITY_' + key]
         
-    print(state)
-
     dv_vector = state.design_vector()
     
     with redirect_folder("EPM", pull, link) as push:
