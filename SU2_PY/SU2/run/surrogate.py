@@ -148,8 +148,7 @@ def surrogate(config):
         # querying the derivative at the last xt
         raw_gradient = derivatives[-1,:]
     
-    # files out
-    surr_title = "SURR_GRAD_" + objective
+
     # info out
     info = su2io.State()
 
