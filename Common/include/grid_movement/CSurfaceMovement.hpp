@@ -500,4 +500,6 @@ class CSurfaceMovement : public CGridMovement {
    * \return Number of points with negative Jacobian determinant.
    */
   unsigned long calculateJacobianDeterminant(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox) const;
+
+  void Rescale_Relaxation_Factor(CConfig* config); //LUCA
 };

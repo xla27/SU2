@@ -246,7 +246,9 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
 
       if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
         cout << endl << "----------------- FFD technique (parametric -> cartesian) ---------------" << endl;
-
+        if (config->GetKind_SU2() != SU2_COMPONENT::SU2_DOT) {
+          Rescale_Relaxation_Factor(config);
+          }   
       /*--- Loop over all the FFD boxes levels ---*/
 
       for (iLevel = 0; iLevel < GetnLevel(); iLevel++) {
@@ -5045,4 +5047,29 @@ unsigned long CSurfaceMovement::calculateJacobianDeterminant(CGeometry* geometry
   SU2_MPI::Allreduce(&tmp, &negative_determinants, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   return negative_determinants;
+}
+
+
+void CSurfaceMovement::Rescale_Relaxation_Factor(CConfig* config) {
+  su2double old_max = 0;  // LUCA
+  int iDV;
+  su2double uplim = config->GetOpt_LineSearch_Bound();
+  for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+    old_max = max(old_max, fabs(config->GetDV_Value(iDV)));
+  }
+  su2double new_scale = config->GetOpt_RelaxFactor();
+
+  if ((old_max * config->GetOpt_RelaxFactor() > uplim) && (config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF)) {
+    if (rank == MASTER_NODE) cout << "Rescaling max was" << old_max * config->GetOpt_RelaxFactor() << endl;
+    su2double tempval = old_max * new_scale;
+    int iii = 1;
+    while (tempval > uplim) {
+      iii = iii * 10;
+      tempval = old_max / iii;
+    }
+    new_scale = config->GetOpt_RelaxFactor() / iii;
+    if (rank == MASTER_NODE) cout << "New_Scale =...." << new_scale << endl;
+    config->SetOpt_RelaxFactor(new_scale);
+  }
+    
 }
