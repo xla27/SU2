@@ -496,7 +496,7 @@ def credibility(config, state=None):
     for i in range(0,5):
         
         # output redirection
-        with redirect_folder(folder, pull, link) as push:
+        with redirect_folder(folder[i], pull, link) as push:
             # make copies
             kkonfig = copy.deepcopy(konfig)
             ztate = copy.deepcopy(state)
