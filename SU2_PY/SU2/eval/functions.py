@@ -502,8 +502,8 @@ def credibility(config, state=None):
             ztate = copy.deepcopy(state)
 
             # set perturbation
-            kkonfig.UQ_COMPONENT = uq[i,0]
-            kkonfig.UQ_PERMUTE = uq[i,1]
+            kkonfig.UQ_COMPONENT = uq[i][0]
+            kkonfig.UQ_PERMUTE = uq[i][1]
             with redirect_output(log_epm[i]):
 
                 # # RUN DIRECT SOLUTION # #
