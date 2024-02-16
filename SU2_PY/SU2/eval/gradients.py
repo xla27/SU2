@@ -124,7 +124,7 @@ def gradient(func_name, method, config, state=None):
 
         # Surrogate Gradients
         elif method == 'SURROGATE':
-            grad = surrogate(config, state)
+            grads = surrogate(func_name, config, state)
 
         else:
             raise Exception("unrecognized gradient method")
