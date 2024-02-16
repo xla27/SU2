@@ -1300,11 +1300,14 @@ def read_epm(filename, func_out_name):
 
     # read credibility indicator
     for line in epm_file:
-        if line.strip()[0] == func_out_name:
-            func.append(float(line.strip()[1]))
+        if line.strip():
+            if line.strip()[0] == func_out_name:
+                func.append(float(line.strip()[1]))
+                continue
+            if line.strip()[0] == "DESIGN VARIABLES":
+                break
+        else:
             continue
-        if line.strip()[0] == "DESIGN VARIABLES":
-            break
 
     # read dv vector
     for line in epm_file:
