@@ -525,7 +525,7 @@ def credibility(config, state=None):
                 ztate.update(info)
 
                 # direct files to push
-                name = info.FILES["EPM"]
+                name = info.FILES["DIRECT"]
                 name = su2io.expand_zones(name, kkonfig)
                 name = su2io.expand_time(name, kkonfig)
                 push.extend(name)
