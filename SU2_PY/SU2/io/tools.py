@@ -1330,8 +1330,12 @@ def write_surrogate(filename, xt, yt, grad):
 
     surr_file.write("TRAINING DATA\n")
     for i, yt in enumerate(yt):
-        surr_file.write("Input = "+ str(xt[i,:]) + "\tOutput = " + str(yt) + "\n")
-    surr_file.write("\n")
+        surr_file.write("Data N°" + str(i) + "\n")
+        surr_file.write("Input = "+ str(xt[i,:]) + "\n")
+        surr_file.write("Output = " + str(yt) + "\n")
+        surr_file.write("\n")
+
+    surr_file.write("\n\n")
     
     surr_file.write("PREDICTED GRADIENT\n")
     for i, der in enumerate(grad):
