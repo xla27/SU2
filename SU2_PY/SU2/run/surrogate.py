@@ -123,7 +123,7 @@ def surrogate(config):
     sm.set_training_values(xt, yt)
 
     if n_data == 1:
-        grad = [0.0] * n_dv
+        raw_gradient = [0.0] * n_dv
 
     else:
         sm.train()
@@ -138,7 +138,7 @@ def surrogate(config):
     surr_title = "SURR_GRAD_" + objective
     # info out
     info = su2io.State()
-    info.HISTORY[surr_title] = grad
+    info.HISTORY[surr_title] = raw_gradient
 
     gradients = {objective[0]: raw_gradient}
     info.GRADIENTS.update(gradients)
