@@ -1300,6 +1300,7 @@ def read_epm(filename, func_out_name):
 
     # read credibility indicator
     for line in epm_file:
+        print(line.strip())
         if line.strip():
             if line.strip()[0] == func_out_name:
                 func.append(float(line.strip()[1]))
