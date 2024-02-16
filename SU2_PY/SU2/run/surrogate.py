@@ -96,6 +96,7 @@ def surrogate(config):
         isPath = os.path.exists(path)
 
         with su2io.redirect_folder(path, pull, link) as push:
+            print(os.getcwd())
 
             func, dv_vec = su2io.tools.read_epm("epm.dat", func_out_name)
         
