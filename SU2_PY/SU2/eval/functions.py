@@ -549,14 +549,15 @@ def credibility(config, state=None):
 
     # Computing credibility coefficients
     creds = su2util.ordered_bunch()
-    for ztate in ztates:
+    for key in su2io.per_surface_map.keys():
         per_vec = []
-        for key in su2io.per_surface_map:
+        for ztate in ztates:
             per_vec.append(ztate["FUNCTIONS"][key])
         state['FUNCTIONS']['CREDIBILITY_' + key] = max(per_vec) - min(per_vec)
         creds['CREDIBILITY_' + key] = state['FUNCTIONS']['CREDIBILITY_' + key]
         
-    
+    print(state)
+
     dv_vector = state.design_vector()
     
     with redirect_folder("EPM", pull, link) as push:
