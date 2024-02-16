@@ -561,11 +561,7 @@ def credibility(config, state=None):
     with redirect_folder("EPM", pull, link) as push:
         su2io.write_epm('epm.dat', creds, dv_vector)
         
-    # CAPIRE COME PRODURRE IL DIZIONARIO HISTORY.EPM IMITANDO L'UTILIZZO DI read_history() E read_plot()
-    # PROBABILMENTE BISOGNA IMITARE COME SI FA IN MULTIPOINT, MA FORSE NON E' NECESSARIA INSERIRE L'HISTORY
         
-    # VERIFICARE SE BISOGNA FARE L'UPDATE DELLO STATE PER TUTTI GLI ALTRI CAMPI, ANCHE SE PROBABILMENTE E' GIA'
-    # POPOLATO DALLE ALTRE FUNCTION EVALUATIONS DELLO STESSO DESIGN STEP
     return creds
 
 
