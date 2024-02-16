@@ -1369,7 +1369,7 @@ def surrogate(func_name, config, state=None):
             # # RUN SURROGATE # #
             konfig["OBJECTIVE_FUNCTION"] = func_output
 
-            info = su2run.surrogate(konfig)  # AGGIUNGERE UNO SCRIPT PER IL SURROGATE MODELING
+            info = su2run.surrogate(konfig)  
 
             state.update(info)
 
