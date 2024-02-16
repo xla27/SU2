@@ -128,8 +128,8 @@ def surrogate(config):
     for i in range(0, n_dv):
         des_sp.append(FloatVariable(xb_low[i], xb_up[i]))
     design_space = DesignSpace(des_sp)
-    
-        
+
+
     # GP instantiation
     sm = KRG(design_space=design_space, theta0=theta0, print_global=print_global)
     sm.set_training_values(xt, yt)
@@ -141,7 +141,7 @@ def surrogate(config):
         sm.train()
 
         # derivatives computation
-        derivatives = np.empty((n_dv, 0))
+        derivatives = np.empty((n_data, 0))
         for i in range(0, n_dv):
             derivatives = np.hstack((derivatives, sm.predict_derivatives(xt, i)))
 
