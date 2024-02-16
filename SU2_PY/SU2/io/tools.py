@@ -1272,12 +1272,12 @@ def write_epm(filename, creds, dv_vector):
     """
     epm_file = open(filename, "w")
 
-    epm_file.write("INDICATORS")
+    epm_file.write("INDICATORS\n")
     for key in creds.keys():
         epm_file.write(key + "\t\t" + str(creds[key]) + "\n")
     epm_file.write("\n")
     
-    epm_file.write("DESIGN VARIABLES")
+    epm_file.write("DESIGN VARIABLES\n")
     for i, dv in enumerate(dv_vector):
         epm_file.write(str(i) + "\t\t" + str(dv) + "\n")
     epm_file.write("\n")
