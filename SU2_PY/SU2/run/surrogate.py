@@ -71,7 +71,7 @@ def surrogate(config):
     konfig = copy.deepcopy(config)
 
     # checking the function
-    func_out_name = konfig["OBJECTIVE_FUNCTION"]
+    objective = konfig["OBJECTIVE_FUNCTION"]
 
     # design space definition
     def_dv = konfig.DEFINITION_DV
@@ -99,7 +99,7 @@ def surrogate(config):
 
             with su2io.redirect_folder(path, pull, link) as push:
 
-                func, dv_vec = su2io.tools.read_epm("epm.dat", func_out_name)
+                func, dv_vec = su2io.tools.read_epm("epm.dat", objective)
                 
             
             xt = np.vstack((xt, np.array(dv_vec)))
@@ -130,15 +130,21 @@ def surrogate(config):
 
         # querying the derivative at the last xt
         xtest = xt[-1,:]
-        grad = []
+        raw_gradient = []
         for i in n_dv:
-            grad.append(float(sm.predict_derivatives(xtest, i).item()))
+            raw_gradient.append(float(sm.predict_derivatives(xtest, i).item()))
     
     # files out
-    surr_title = "SURR_GRAD_" + func_out_name
+    surr_title = "SURR_GRAD_" + objective
     # info out
     info = su2io.State()
     info.HISTORY[surr_title] = grad
+
+    gradients = {objective[0]: raw_gradient}
+    info.GRADIENTS.update(gradients)
+
+    # writing the surrogate
+    su2io.write_surrogate("surrogate.dat", xt, yt, raw_gradient)
 
     return info
         
