@@ -1264,7 +1264,7 @@ def restart2solution(config, state={}):
 
 
 def write_epm(filename, creds, dv_vector):
-    """write_epm(filename, config, creds, dv_vector)
+    """write_epm(filename, creds, dv_vector)
     writes a .dat file containing all the credibility
     coefficients together with the design variables vector
     to be read from the surrogate.py script for gradient
@@ -1320,7 +1320,27 @@ def read_epm(filename, func_out_name):
     return func, dv_vec
 
     
-        
+def write_surrogate(filename, xt, yt, grad):
+    """write_surrogate(filename, xt, yt, grad)
+    writes a .dat file containing training inputs and outputs,
+    together with the predicted gradient
+    """
+
+    surr_file = open(filename, "w")
+
+    surr_file.write("TRAINING DATA\n")
+    for i, yt in enumerate(yt):
+        surr_file.write("Input = "+ str(xt[i,:]) + "\tOutput = " + str(yt) + "\n")
+    surr_file.write("\n")
+    
+    surr_file.write("PREDICTED GRADIENT\n")
+    for i, der in enumerate(grad):
+        surr_file.write(str(der) + "\n")
+    surr_file.write("\n")
+
+    surr_file.close()
+
+    return
 
 
 
