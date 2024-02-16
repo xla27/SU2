@@ -85,7 +85,7 @@ def surrogate(config):
     # reading the data from past EPM
     pull = []
     link = []
-    i = 0
+    i = 1
 
     xt = np.empty((0, n_dv))
     yt = np.array([])
@@ -102,6 +102,8 @@ def surrogate(config):
         
         xt = np.vstack((xt, np.array(dv_vec)))
         yt = np.append(yt, func)
+
+        i += 1
     
     """increasing the characteristic lengthscales, if the training points are less than n_dv
     the GP is kept isotropic, if they are greater or equal than n_dv the process becomes
