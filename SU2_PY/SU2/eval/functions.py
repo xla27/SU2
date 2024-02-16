@@ -383,7 +383,7 @@ def credibility(config, state=None):
 
     # console output
     if config.get("CONSOLE", "VERBOSE") in ["QUIET", "CONCISE"]:
-        log_epm = ["log_epm_1c.out", "log_epm_2c.out", "log_epm_3c.out", "log_epm_p1c1.out", "log_epm_p1c2.out"]
+        log_epm = 'log_epm.out'
     else:
         log_epm = None
 
@@ -504,7 +504,7 @@ def credibility(config, state=None):
             # set perturbation
             kkonfig.UQ_COMPONENT = uq[i][0]
             kkonfig.UQ_PERMUTE = uq[i][1]
-            with redirect_output(log_epm[i]):
+            with redirect_output(log_epm):
 
                 # # RUN DIRECT SOLUTION # #
                 info = su2run.epm(kkonfig)
