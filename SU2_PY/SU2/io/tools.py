@@ -289,6 +289,19 @@ per_surface_map = {"LIFT"       :   "CL" ,
                   "FORCE_Z"     :   "CFz"   ,
                   "EFFICIENCY"  :   "CL/CD" }
 
+# cred-surface functions
+cred_surface_map = {
+    "CREDIBILITY_LIFT": "Cred_CL",
+    "CREDIBILITY_DRAG": "Cred_CD",
+    "CREDIBILITY_SIDEFORCE": "Cred_CSF",
+    "CREDIBILITY_MOMENT_X": "Cred_CMx",
+    "CREDIBILITY_MOMENT_Y": "Cred_CMy",
+    "CREDIBILITY_MOMENT_Z": "Cred_CMz",
+    "CREDIBILITY_FORCE_X": "Cred_CFx",
+    "CREDIBILITY_FORCE_Y": "Cred_CFy",
+    "CREDIBILITY_FORCE_Z": "Cred_CFz",
+    "CREDIBILITY_EFFICIENCY": "Cred_CL/CD"}
+
 # -------------------------------------------------------------------
 #  Include per-surface output from History File
 # -------------------------------------------------------------------
@@ -1082,3 +1095,87 @@ def restart2solution(config,state={}):
     else:
         raise Exception('unknown math problem')
 
+
+
+def write_epm(filename, creds, dv_vector):
+    """write_epm(filename, creds, dv_vector)
+    writes a .dat file containing all the credibility
+    coefficients together with the design variables vector
+    to be read from the surrogate.py script for gradient
+    surrogates
+    """
+    epm_file = open(filename, "w")
+
+    epm_file.write("INDICATORS\n")
+    for key in creds.keys():
+        epm_file.write(key + "\t\t" + str(creds[key]) + "\n")
+    epm_file.write("\n")
+    
+    epm_file.write("DESIGN VARIABLES\n")
+    for i, dv in enumerate(dv_vector):
+        epm_file.write(str(i) + "\t\t" + str(dv) + "\n")
+    epm_file.write("\n")
+
+    epm_file.close()
+
+    return
+
+
+def read_epm(filename, func_out_name):
+    """read_epm(filename, func_out) reads a .dat file
+    (typically epm.dat) and outputs the value of the indicators
+    given by func_out and the set of design variables"""
+
+    # open file
+    epm_file = open(filename)
+
+    func = []
+    dv_vec = []
+
+    # read credibility indicator
+    for line in epm_file:
+        if line.strip():
+            if line.partition('\t\t')[0] == func_out_name:
+                func.append(float(line.partition('\t\t')[-1]))
+                continue
+            if line.partition('\t\t')[0] == "DESIGN VARIABLES\n":
+                break
+        else:
+            continue
+
+    # read dv vector
+    for line in epm_file:
+        if line.strip():
+            line.replace("\n", "")
+            dv_vec.append(float(line.partition('\t\t')[-1]))
+        else: 
+            continue
+
+    return func, dv_vec
+
+    
+def write_surrogate(filename, xt, yt, grad):
+    """write_surrogate(filename, xt, yt, grad)
+    writes a .dat file containing training inputs and outputs,
+    together with the predicted gradient
+    """
+
+    surr_file = open(filename, "w")
+
+    surr_file.write("TRAINING DATA\n")
+    for i, yt in enumerate(yt):
+        surr_file.write("Data N°" + str(i) + "\n")
+        surr_file.write("Input = "+ str(xt[i,:]) + "\n")
+        surr_file.write("Output = " + str(yt) + "\n")
+        surr_file.write("\n")
+
+    surr_file.write("\n\n")
+    
+    surr_file.write("PREDICTED GRADIENT\n")
+    for i, der in enumerate(grad):
+        surr_file.write(str(der) + "\n")
+    surr_file.write("\n")
+
+    surr_file.close()
+
+    return
