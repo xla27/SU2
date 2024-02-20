@@ -376,6 +376,9 @@ def obj_df(dvs,config,state=None):
                 scale*=obj_dp(config, state, this_obj, def_objs)
                 sign = 1.0
 
+            if this_obj in su2io.cred_surface_map.keys():
+                grad_method = "SURROGATE"
+
             # Evaluate Objective Gradient
             grad = su2grad(this_obj,grad_method,config,state)
 
@@ -466,6 +469,9 @@ def con_dceq(dvs,config,state=None):
     for i_obj,this_con in enumerate(constraints):
         global_factor = float(config['OPT_GRADIENT_FACTOR'])
         value = def_cons[this_con]['VALUE']
+
+        if this_con in su2io.cred_surface_map.keys():
+            grad_method = "SURROGATE"
 
         # Evaluate Constraint Gradient
         grad = su2grad(this_con,grad_method,config,state)
@@ -563,6 +569,9 @@ def con_dcieq(dvs,config,state=None):
         value = def_cons[this_con]['VALUE']
         sign  = def_cons[this_con]['SIGN']
         sign  = su2io.get_constraintSign(sign)
+
+        if this_con in su2io.cred_surface_map.keys():
+            grad_method = "SURROGATE"
 
         # Evaluate Constraint Gradient
         grad = su2grad(this_con,grad_method,config,state)
