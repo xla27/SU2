@@ -121,6 +121,10 @@ def gradient( func_name, method, config, state=None ):
         elif method == 'DIRECTDIFF':
             grad = directdiff (config , state )
 
+        # Surrogate Gradients
+        elif method == 'SURROGATE':
+            grads = surrogate(func_name, config, state)
+
         else:
             raise Exception('unrecognized gradient method')
 
@@ -1209,3 +1213,117 @@ def directdiff( config, state=None ):
 
 #: def directdiff()
 
+
+# ----------------------------------------------------------------------
+#  Surrogate Gradients
+# ----------------------------------------------------------------------
+
+
+def surrogate(func_name, config, state=None):
+    """vals = SU2.eval.surrogate(func_name,config,state=None)
+
+    Evaluates the aerodynamics gradients using the
+    surrogate methodology with:
+        SU2.eval.func()
+        SU2.run.surrogate()
+
+    Assumptions:
+        Config is already setup for deformation.
+        Mesh may or may not be deformed.
+        Updates config and state by reference.
+        Surrogate Redundancy if state.GRADIENTS has key func_name.
+        Direct Redundancy if state.FUNCTIONS has key func_name.
+
+    Executes in:
+        ./SURROGATE_<func_name>
+
+    Inputs:
+        func_name - SU2 objective function name
+        config    - an SU2 config
+        state     - optional, an SU2 state
+
+    Outputs:
+        A Bunch() with keys of objective function names
+        and values of list of floats of gradient values
+    """
+
+    # ----------------------------------------------------
+    #  Initialize
+    # ----------------------------------------------------
+
+    # initialize
+    state = su2io.State(state)
+    special_cases = su2io.get_specialCases(config)
+
+    # When a list of objectives is used, they are combined
+    # and the output name is 'COMBO'
+    multi_objective = type(func_name) == list
+    func_output = func_name
+    if multi_objective:
+        func_output = "COMBO"
+
+    SURR_GRAD_NAME = "SURR_GRAD_" + func_output
+
+    # console output
+    if config.get("CONSOLE", "VERBOSE") in ["QUIET", "CONCISE"]:
+        log_surrogate = "log_Surrogate.out"
+    else:
+        log_surrogate = None
+
+    # ----------------------------------------------------
+    #  Redundancy Check
+    # ----------------------------------------------------
+
+    # master redundancy check
+    if func_output in state["GRADIENTS"]:
+        grads = state["GRADIENTS"]
+        return copy.deepcopy(grads)
+
+    # ----------------------------------------------------
+    #  Direct Solution
+    # ----------------------------------------------------
+
+    # run (includes redundancy checks)
+    function(func_name, config, state)
+
+    # ----------------------------------------------------
+    #  Adaptation (not implemented)
+    # ----------------------------------------------------
+
+    # if not state.['ADAPTED_ADJOINT']:
+    #    config = su2run.adaptation(config)
+    #    state['ADAPTED_FUNC'] = True
+
+    # ----------------------------------------------------
+    #  Surrogate Solution
+    # ----------------------------------------------------
+
+    konfig = copy.deepcopy(config)
+
+    pull = []
+    link = []
+
+    # output redirection
+    with redirect_folder(SURR_GRAD_NAME, pull, link) as push:
+        with redirect_output(log_surrogate):
+
+            # # RUN SURROGATE # #
+            konfig["OBJECTIVE_FUNCTION"] = func_output
+
+            info = su2run.surrogate(konfig)  
+
+            state.update(info)
+
+            # # solution files to push
+            # name = state.FILES[SURR_GRAD_NAME]
+            # name = su2io.expand_zones(name, konfig)
+            # name = su2io.expand_time(name, konfig)
+            # push.extend(name)
+
+    #: with output redirection
+
+    # return output
+    grads = su2util.ordered_bunch()
+    grads[func_output] = state["GRADIENTS"][func_output]
+
+    return grads
