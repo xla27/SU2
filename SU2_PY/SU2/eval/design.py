@@ -572,6 +572,8 @@ def con_dcieq(dvs,config,state=None):
 
         if this_con in su2io.cred_surface_map.keys():
             grad_method = "SURROGATE"
+        
+        print(this_con, grad_method)
 
         # Evaluate Constraint Gradient
         grad = su2grad(this_con,grad_method,config,state)
