@@ -571,7 +571,7 @@ def con_dcieq(dvs,config,state=None):
         sign  = su2io.get_constraintSign(sign)
 
         if this_con in su2io.historyOutFields:
-            if su2io.historyOutFields[this_con]['TYPE'] == 'COEFFICIENT':
+            if su2io.historyOutFields[this_con]['TYPE'] == 'CREDIBILITY':
                 grad_method = "SURROGATE"
         
         print(this_con, grad_method)
