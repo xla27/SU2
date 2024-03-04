@@ -471,6 +471,9 @@ def credibility(config, state=None):
     konfig.UQ_DELTA_B = 1.0
     konfig.UQ_URLX = 0.1
 
+    # Setting EPM iterations
+    konfig.ITER = config.EPM_ITER
+
     
     with redirect_folder("EPM", pull, link) as push:
         konfig.dump("config_EPM.cfg")
