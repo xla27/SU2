@@ -391,8 +391,11 @@ def obj_df(dvs, config, state=None):
                 scale *= obj_dp(config, state, this_obj, def_objs)
                 sign = 1.0
 
-            if this_obj in su2io.cred_surface_map.keys():
-                grad_method = "SURROGATE"
+            if this_obj in su2io.historyOutFields:
+                if su2io.historyOutFields[this_obj]['TYPE'] == 'CREDIBILITY':
+                    grad_method = "SURROGATE"
+            else:
+                grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
 
             # Evaluate Objective Gradient
             grad = su2grad(this_obj, grad_method, config, state)
@@ -489,8 +492,11 @@ def con_dceq(dvs, config, state=None):
         global_factor = float(config["OPT_GRADIENT_FACTOR"])
         value = def_cons[this_con]["VALUE"]
 
-        if this_con in su2io.cred_surface_map.keys():
-            grad_method = "SURROGATE"
+        if this_con in su2io.historyOutFields:
+            if su2io.historyOutFields[this_con]['TYPE'] == 'CREDIBILITY':
+                grad_method = "SURROGATE"
+        else:
+            grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')    
 
         # Evaluate Constraint Gradient
         grad = su2grad(this_con, grad_method, config, state)
@@ -593,8 +599,11 @@ def con_dcieq(dvs, config, state=None):
         sign = def_cons[this_con]["SIGN"]
         sign = su2io.get_constraintSign(sign)
 
-        if this_con in su2io.cred_surface_map.keys():
-            grad_method = "SURROGATE"
+        if this_con in su2io.historyOutFields:
+            if su2io.historyOutFields[this_con]['TYPE'] == 'CREDIBILITY':
+                grad_method = "SURROGATE"
+        else:
+            grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')    
 
         # Evaluate Constraint Gradient
         grad = su2grad(this_con, grad_method, config, state)
