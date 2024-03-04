@@ -2806,6 +2806,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Number of zones of the problem */
   addPythonOption("NZONES");
 
+  /* DESCRIPTION: Maximum iterations for EPM problems*/
+  addPythonOption("EPM_ITER");
+
   /* DESCRIPTION: ParMETIS load balancing tolerance */
   addDoubleOption("PARMETIS_TOLERANCE", ParMETIS_tolerance, 0.02);
 
