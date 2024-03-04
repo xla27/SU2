@@ -571,10 +571,12 @@ def con_dcieq(dvs,config,state=None):
         sign  = su2io.get_constraintSign(sign)
 
         if this_con in su2io.historyOutFields:
+            print(this_con + ' in history fields')
             if su2io.historyOutFields[this_con]['TYPE'] == 'CREDIBILITY':
+                print(this_con + ' with type credibility')
                 grad_method = "SURROGATE"
         
-        print(this_con, grad_method)
+        
 
         # Evaluate Constraint Gradient
         grad = su2grad(this_con,grad_method,config,state)
