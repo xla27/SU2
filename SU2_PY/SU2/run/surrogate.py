@@ -130,7 +130,8 @@ def surrogate(config):
 
     if n_data == 1:
         #raw_gradient = [0.0] * n_dv
-        raw_gradient = np.random.rand(n_dv)
+        rand = np.random.rand(n_dv)
+        raw_gradient = rand / np.linalg.norm(rand, 2)
 
     else:
         gp.fit(xt, yt)
