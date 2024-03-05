@@ -134,18 +134,18 @@ def surrogate(config):
 
     if n_data == 1:
 
-        #raw_gradient = [0.0] * n_dv
+        raw_gradient = [0.0] * n_dv
 
-        rand = np.random.rand(n_dv)
-        raw_gradient = rand / np.linalg.norm(rand, 2)
+        # rand = np.random.rand(n_dv)
+        # raw_gradient = rand / np.linalg.norm(rand, 2)
 
-        # making the random first guess have a 1E-6 magnitude
-        raw_gradient = 1E-6 * raw_gradient
-        k = 0
-        for i_dv,dv_scl in enumerate(dv_scales):
-            for i_grd in range(dv_size[i_dv]):
-                raw_gradient[k] = raw_gradient[k] * dv_scl / global_factor 
-                k = k + 1
+        # # making the random first guess have a 1E-6 magnitude
+        # raw_gradient = 1E-6 * raw_gradient
+        # k = 0
+        # for i_dv,dv_scl in enumerate(dv_scales):
+        #     for i_grd in range(dv_size[i_dv]):
+        #         raw_gradient[k] = raw_gradient[k] * dv_scl / global_factor 
+        #         k = k + 1
 
     else:
         gp.fit(xt, yt)
