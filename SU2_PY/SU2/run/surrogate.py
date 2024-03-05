@@ -77,11 +77,14 @@ def surrogate(config):
     # verbose
     if konfig.get("CONSOLE", "VERBOSE") in ["QUIET", "CONCISE"]:
         warnings.filterwarnings('ignore') 
+
  
 
-    # design space definition
+    # design space definition and scaling factors
     def_dv = konfig.DEFINITION_DV
     n_dv = sum(def_dv["SIZE"])
+    dv_scales = def_dv["SCALE"]
+    global_factor = float(konfig['OPT_GRADIENT_FACTOR'])
     bound_upper = float(konfig.OPT_BOUND_UPPER)   
     bound_lower = float(konfig.OPT_BOUND_LOWER)  
     relax_factor = float(config.OPT_RELAX_FACTOR)
@@ -129,9 +132,19 @@ def surrogate(config):
     gp = sklgp.GaussianProcessRegressor(kernel=kernel, optimizer='fmin_l_bfgs_b', n_restarts_optimizer=50, alpha=1e-7)
 
     if n_data == 1:
+
         #raw_gradient = [0.0] * n_dv
+        
         rand = np.random.rand(n_dv)
         raw_gradient = rand / np.linalg.norm(rand, 2)
+
+        # making the random first guess have a 1E-6 magnitude
+        raw_gradient = 1E-6 * raw_gradient
+        k = 0
+        for i_dv,dv_scl in enumerate(dv_scales):
+            for i_grd in range(n_dv[i_dv]):
+                raw_gradient[k] = raw_gradient[k] * dv_scl / global_factor 
+                k = k + 1
 
     else:
         gp.fit(xt, yt)
