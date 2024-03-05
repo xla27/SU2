@@ -546,7 +546,7 @@ def credibility(config, state=None):
         state['FUNCTIONS']['CREDIBILITY_' + key] = max(per_vec) - min(per_vec)
         creds['CREDIBILITY_' + key] = state['FUNCTIONS']['CREDIBILITY_' + key]
         
-    dv_vector = state.design_vector()
+    dv_vector = list(config['DV_VALUE_NEW'])
     
     with redirect_folder("EPM", pull, link) as push:
         su2io.write_epm('epm.dat', creds, dv_vector)
