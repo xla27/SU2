@@ -129,7 +129,8 @@ def surrogate(config):
     gp = sklgp.GaussianProcessRegressor(kernel=kernel, optimizer='fmin_l_bfgs_b', n_restarts_optimizer=50, alpha=1e-7)
 
     if n_data == 1:
-        raw_gradient = [0.0] * n_dv
+        #raw_gradient = [0.0] * n_dv
+        raw_gradient = np.random.rand(n_dv)
 
     else:
         gp.fit(xt, yt)
