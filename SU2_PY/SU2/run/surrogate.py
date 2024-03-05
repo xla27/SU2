@@ -37,6 +37,7 @@ from .. import io as su2io
 
 import scipy.optimize as sci_opt
 import sklearn.gaussian_process as sklgp
+import warnings
 
 # ----------------------------------------------------------------------
 #  Surrogate Modeling
@@ -75,9 +76,8 @@ def surrogate(config):
 
     # verbose
     if konfig.get("CONSOLE", "VERBOSE") in ["QUIET", "CONCISE"]:
-        print_global = True
-    else:
-        print_global = False
+        warnings.filterwarnings('ignore') 
+ 
 
     # design space definition
     def_dv = konfig.DEFINITION_DV
