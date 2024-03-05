@@ -122,32 +122,32 @@ def epm(config):
     # info out
     info = su2io.State()
     info.FUNCTIONS.update(aerodynamics)
-    info.FILES.DIRECT = konfig["RESTART_FILENAME"]
+    #info.FILES.DIRECT = konfig["RESTART_FILENAME"]
     if "INV_DESIGN_CP" in special_cases:
         info.FILES.TARGET_CP = "TargetCp.dat"
     if "INV_DESIGN_HEATFLUX" in special_cases:
         info.FILES.TARGET_HEATFLUX = "TargetHeatFlux.dat"
-    info.HISTORY.DIRECT = history
+    #info.HISTORY.DIRECT = history
 
-    """If WINDOW_CAUCHY_CRIT is activated and the time marching converged before the final time has been reached,
-       store the information for the adjoint run"""
-    if config.get("WINDOW_CAUCHY_CRIT", "NO") == "YES" and config.TIME_MARCHING != "NO":
-        konfig["TIME_ITER"] = int(
-            info.HISTORY.DIRECT.Time_Iter[-1] + 1
-        )  # update the last iteration
-        if konfig["UNST_ADJOINT_ITER"] > konfig["TIME_ITER"]:
-            konfig["ITER_AVERAGE_OBJ"] = max(
-                0,
-                konfig["ITER_AVERAGE_OBJ"]
-                - (konfig["UNST_ADJOINT_ITER"] - konfig["TIME_ITER"]),
-            )
-            konfig["UNST_ADJOINT_ITER"] = konfig["TIME_ITER"]
+    # """If WINDOW_CAUCHY_CRIT is activated and the time marching converged before the final time has been reached,
+    #    store the information for the adjoint run"""
+    # if config.get("WINDOW_CAUCHY_CRIT", "NO") == "YES" and config.TIME_MARCHING != "NO":
+    #     konfig["TIME_ITER"] = int(
+    #         info.HISTORY.DIRECT.Time_Iter[-1] + 1
+    #     )  # update the last iteration
+    #     if konfig["UNST_ADJOINT_ITER"] > konfig["TIME_ITER"]:
+    #         konfig["ITER_AVERAGE_OBJ"] = max(
+    #             0,
+    #             konfig["ITER_AVERAGE_OBJ"]
+    #             - (konfig["UNST_ADJOINT_ITER"] - konfig["TIME_ITER"]),
+    #         )
+    #         konfig["UNST_ADJOINT_ITER"] = konfig["TIME_ITER"]
 
-        info["WND_CAUCHY_DATA"] = {
-            "TIME_ITER": konfig["TIME_ITER"],
-            "UNST_ADJOINT_ITER": konfig["UNST_ADJOINT_ITER"],
-            "ITER_AVERAGE_OBJ": konfig["ITER_AVERAGE_OBJ"],
-        }
+    #     info["WND_CAUCHY_DATA"] = {
+    #         "TIME_ITER": konfig["TIME_ITER"],
+    #         "UNST_ADJOINT_ITER": konfig["UNST_ADJOINT_ITER"],
+    #         "ITER_AVERAGE_OBJ": konfig["ITER_AVERAGE_OBJ"],
+    #     }
 
     su2merge(konfig)
 
