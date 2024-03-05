@@ -35,8 +35,8 @@ import numpy as np
 
 from .. import io as su2io
 
-from smt.surrogate_models import KRG
-from smt.utils.design_space import DesignSpace, FloatVariable
+import scipy.optimize as sci_opt
+import sklearn.gaussian_process as sklgp
 
 # ----------------------------------------------------------------------
 #  Surrogate Modeling
@@ -113,40 +113,34 @@ def surrogate(config):
 
         i += 1
     
-    """increasing the characteristic lengthscales, if the training points are less than n_dv
+    """GP characteristic lengthscales, if the training points are less than n_dv
     the GP is kept isotropic, if they are greater or equal than n_dv the process becomes
     anisotropic
     """
     n_data = yt.shape[0]
 
-    theta0 = [1e-2]
+    theta0 = np.array([1e-1]).reshape(1,1)
     if n_data >= n_dv:
-        theta0 = [1e-2] * n_dv 
+        theta0 = np.array([1e-1] * n_dv).reshape(n_dv,1) 
     
-    # design space
-    des_sp = []
-    for i in range(0, n_dv):
-        des_sp.append(FloatVariable(xb_low[i], xb_up[i]))
-    design_space = DesignSpace(des_sp)
-
 
     # GP instantiation
-    sm = KRG(design_space=design_space, theta0=theta0, print_global=print_global)
-    sm.set_training_values(xt, yt)
+    kernel = sklgp.kernels.ConstantKernel(1.0, (1e-1**3, 1e1**2)) * sklgp.kernels.RBF(length_scale=theta0, length_scale_bounds=(1e-2, 1e2))
+    gp = sklgp.GaussianProcessRegressor(kernel=kernel, optimizer='fmin_l_bfgs_b', n_restarts_optimizer=50, alpha=1e-7)
 
     if n_data == 1:
         raw_gradient = [0.0] * n_dv
 
     else:
-        sm.train()
+        gp.fit(xt, yt)
 
         # derivatives computation
-        derivatives = np.empty((n_data, 0))
-        for i in range(0, n_dv):
-            derivatives = np.hstack((derivatives, sm.predict_derivatives(xt, i)))
+        def fun_prediction(x, gp):
+            fun_pred = gp.predict(x.reshape(1, -1))
+            return fun_pred
 
         # querying the derivative at the last xt
-        raw_gradient = derivatives[-1,:]
+        raw_gradient = sci_opt.approx_fprime(xt[-1,:], fun_prediction, [np.sqrt(np.finfo(float).eps)]*n_dv, gp)
     
 
     # info out
