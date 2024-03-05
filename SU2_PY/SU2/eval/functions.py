@@ -374,12 +374,12 @@ def credibility(config, state=None):
     else:
         log_epm = None
 
-    # ----------------------------------------------------
-    #  Update Mesh
-    # ----------------------------------------------------
+    # # ----------------------------------------------------
+    # #  Update Mesh
+    # # ----------------------------------------------------
 
-    # does decomposition and deformation
-    info = update_mesh(config, state)
+    # # does decomposition and deformation
+    # info = update_mesh(config, state)
 
     # ----------------------------------------------------
     #  Adaptation (not implemented)
