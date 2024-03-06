@@ -519,22 +519,22 @@ def credibility(config, state=None):
                 su2io.restart2solution(kkonfig, info)
                 ztate.update(info)
 
-                # direct files to push
-                name = info.FILES["EPM"]
-                name = su2io.expand_zones(name, kkonfig)
-                name = su2io.expand_time(name, kkonfig)
-                push.extend(name)
+                # # epm files to push
+                # name = info.FILES["EPM"]
+                # name = su2io.expand_zones(name, kkonfig)
+                # name = su2io.expand_time(name, kkonfig)
+                # push.extend(name)
 
-                # pressure files to push
-                if "TARGET_CP" in info.FILES:
-                    push.append(info.FILES["TARGET_CP"])
+                # # pressure files to push
+                # if "TARGET_CP" in info.FILES:
+                #     push.append(info.FILES["TARGET_CP"])
 
-                # heat flux files to push
-                if "TARGET_HEATFLUX" in info.FILES:
-                    push.append(info.FILES["TARGET_HEATFLUX"])
+                # # heat flux files to push
+                # if "TARGET_HEATFLUX" in info.FILES:
+                #     push.append(info.FILES["TARGET_HEATFLUX"])
 
-                if "FLOW_META" in info.FILES:
-                    push.append(info.FILES["FLOW_META"])
+                # if "FLOW_META" in info.FILES:
+                #     push.append(info.FILES["FLOW_META"])
 
         # Updating performance parameters
         su2io.update_persurface(kkonfig, ztate)
