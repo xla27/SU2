@@ -83,7 +83,8 @@ def epm(config):
 
     # setup direct problem
     konfig["MATH_PROBLEM"] = "DIRECT"
-    konfig["CONV_FILENAME"] = konfig["CONV_FILENAME"] + epm_name
+    #konfig["CONV_FILENAME"] = konfig["CONV_FILENAME"] + epm_name
+    konfig["CONV_FILENAME"] = konfig["CONV_FILENAME"] + "_direct"
 
     direct_diff = konfig.get("DIRECT_DIFF", "NO") == "YES"
 
