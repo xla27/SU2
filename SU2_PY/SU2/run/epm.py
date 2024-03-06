@@ -108,12 +108,12 @@ def epm(config):
         if konfig.get("CONFIG_LIST", []) != []:
             konfig[
                 "CONV_FILENAME"
-            ] = "config" + epm_name  
+            ] = "config_CFD"   
         restart_iter = "_" + str(konfig["RESTART_ITER"]).zfill(5)
         history_filename = konfig["CONV_FILENAME"] + restart_iter + plot_extension
     else:
         if konfig.get("CONFIG_LIST", []) != []:
-            konfig["CONV_FILENAME"] = "config" + epm_name
+            konfig["CONV_FILENAME"] = "config_CFD" 
         history_filename = konfig["CONV_FILENAME"] + plot_extension
 
     special_cases = su2io.get_specialCases(konfig)
@@ -165,7 +165,5 @@ def epm(config):
     #     }
 
     su2merge(konfig)
-
-    print(info)
 
     return info
