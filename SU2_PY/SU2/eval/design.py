@@ -151,6 +151,8 @@ class Design(object):
                 save_data(filename,self)
 
         #: with redirect folder
+        
+        print(state)
 
         # update files
         files.update(state['FILES'])
