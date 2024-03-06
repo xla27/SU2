@@ -166,4 +166,6 @@ def epm(config):
 
     su2merge(konfig)
 
+    print(info)
+
     return info
