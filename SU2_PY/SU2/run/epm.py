@@ -69,15 +69,15 @@ def epm(config):
     konfig = copy.deepcopy(config)
 
     # understanding which EPM is for naming
-    if konfig.UQ.COMPONENT == 1 and konfig.UQ_PERMUTE == "NO":
+    if konfig.UQ_COMPONENT == 1 and konfig.UQ_PERMUTE == "NO":
         epm_name = "_EPM_1c"
-    if konfig.UQ.COMPONENT == 2 and konfig.UQ_PERMUTE == "NO":
+    if konfig.UQ_COMPONENT == 2 and konfig.UQ_PERMUTE == "NO":
         epm_name = "_EPM_2c"
-    if konfig.UQ.COMPONENT == 3 and konfig.UQ_PERMUTE == "NO":
+    if konfig.UQ_COMPONENT == 3 and konfig.UQ_PERMUTE == "NO":
         epm_name = "_EPM_3c"
-    if konfig.UQ.COMPONENT == 1 and konfig.UQ_PERMUTE == "YES":
+    if konfig.UQ_COMPONENT == 1 and konfig.UQ_PERMUTE == "YES":
         epm_name = "_EPM_p1c1"
-    if konfig.UQ.COMPONENT == 2 and konfig.UQ_PERMUTE == "YES":
+    if konfig.UQ_COMPONENT == 2 and konfig.UQ_PERMUTE == "YES":
         epm_name = "_EPM_p1c2"
     
 
