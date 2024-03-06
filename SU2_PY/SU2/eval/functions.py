@@ -516,7 +516,7 @@ def credibility(config, state=None):
                     kkonfig["ITER_AVERAGE_OBJ"] = info.WND_CAUCHY_DATA["ITER_AVERAGE_OBJ"]
                     kkonfig["UNST_ADJOINT_ITER"] = info.WND_CAUCHY_DATA["UNST_ADJOINT_ITER"]
 
-                su2io.restart2solution(kkonfig, info)
+                #su2io.restart2solution(kkonfig, info)   # Considera estendere restart2solution a EPM, inserendo un MATH_PROBLEM = EPM per distinguerlo da DIRECT
                 ztate.update(info)
 
                 # epm files to push
