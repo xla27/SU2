@@ -482,7 +482,7 @@ def credibility(config, state=None):
     # perturbations and folders  
     folder = ["EPM/1c", "EPM/2c", "EPM/3c", "EPM/p1c1", "EPM/p1c2"]
     uq = [[1, "NO"], [2, "NO"], [3, "NO"], [1, "YES"], [2, "YES"]]
-    solution_filename = ["solution_epm_1c.dat", "solution_epm_2c.dat", "solution_epm_3c.dat", "solution_epm_p1c1.dat", "solution_epm_p1c2.dat"]
+    #solution_filename = ["solution_epm_1c.dat", "solution_epm_2c.dat", "solution_epm_3c.dat", "solution_epm_p1c1.dat", "solution_epm_p1c2.dat"]
 
     for i in range(0,5):
         
@@ -497,7 +497,7 @@ def credibility(config, state=None):
             kkonfig.UQ_PERMUTE = uq[i][1]
             
             # set solution filename
-            kkonfig['SOLUTION_FILENAME'] = solution_filename[i]
+            #kkonfig['SOLUTION_FILENAME'] = solution_filename[i]
 
             with redirect_output(log_epm):
 
