@@ -68,9 +68,22 @@ def epm(config):
     # local copy
     konfig = copy.deepcopy(config)
 
+    # understanding which EPM is for naming
+    if konfig.UQ.COMPONENT == 1 and konfig.UQ_PERMUTE == "NO":
+        epm_name = "_EPM_1c"
+    if konfig.UQ.COMPONENT == 2 and konfig.UQ_PERMUTE == "NO":
+        epm_name = "_EPM_2c"
+    if konfig.UQ.COMPONENT == 3 and konfig.UQ_PERMUTE == "NO":
+        epm_name = "_EPM_3c"
+    if konfig.UQ.COMPONENT == 1 and konfig.UQ_PERMUTE == "YES":
+        epm_name = "_EPM_p1c1"
+    if konfig.UQ.COMPONENT == 2 and konfig.UQ_PERMUTE == "YES":
+        epm_name = "_EPM_p1c2"
+    
+
     # setup direct problem
     konfig["MATH_PROBLEM"] = "DIRECT"
-    konfig["CONV_FILENAME"] = konfig["CONV_FILENAME"] + "_direct"
+    konfig["CONV_FILENAME"] = konfig["CONV_FILENAME"] + epm_name
 
     direct_diff = konfig.get("DIRECT_DIFF", "NO") == "YES"
 
@@ -95,12 +108,12 @@ def epm(config):
         if konfig.get("CONFIG_LIST", []) != []:
             konfig[
                 "CONV_FILENAME"
-            ] = "config_CFD"  # master cfg is always config_CFD. Hardcoded names are prob nt ideal.
+            ] = "config" + epm_name  
         restart_iter = "_" + str(konfig["RESTART_ITER"]).zfill(5)
         history_filename = konfig["CONV_FILENAME"] + restart_iter + plot_extension
     else:
         if konfig.get("CONFIG_LIST", []) != []:
-            konfig["CONV_FILENAME"] = "config_CFD"
+            konfig["CONV_FILENAME"] = "config" + epm_name
         history_filename = konfig["CONV_FILENAME"] + plot_extension
 
     special_cases = su2io.get_specialCases(konfig)
@@ -122,12 +135,14 @@ def epm(config):
     # info out
     info = su2io.State()
     info.FUNCTIONS.update(aerodynamics)
-    #info.FILES.DIRECT = konfig["RESTART_FILENAME"]
+    info.FILES.EPM = konfig["RESTART_FILENAME"]
     if "INV_DESIGN_CP" in special_cases:
         info.FILES.TARGET_CP = "TargetCp.dat"
     if "INV_DESIGN_HEATFLUX" in special_cases:
         info.FILES.TARGET_HEATFLUX = "TargetHeatFlux.dat"
-    #info.HISTORY.DIRECT = history
+    info.HISTORY.EPM = history
+
+    # SISTEMARE PER UNSTEADY SIMULATIONS
 
     # """If WINDOW_CAUCHY_CRIT is activated and the time marching converged before the final time has been reached,
     #    store the information for the adjoint run"""
