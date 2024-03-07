@@ -132,7 +132,7 @@ def surrogate(config):
     kernel = sklgp.kernels.ConstantKernel(1.0, (1e-1**3, 1e1**2)) * sklgp.kernels.RBF(length_scale=theta0, length_scale_bounds=(1e-2, 1e2))
     gp = sklgp.GaussianProcessRegressor(kernel=kernel, optimizer='fmin_l_bfgs_b', n_restarts_optimizer=50, alpha=1e-7)
 
-    if n_data == 1:
+    if n_data <= n_dv/2:
 
         raw_gradient = [0.0] * n_dv
 
