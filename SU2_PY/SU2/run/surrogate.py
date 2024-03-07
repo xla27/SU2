@@ -132,7 +132,7 @@ def surrogate(config):
     kernel = sklgp.kernels.ConstantKernel(1.0, (1e-1**3, 1e1**2)) * sklgp.kernels.RBF(length_scale=theta0, length_scale_bounds=(1e-2, 1e2))
     gp = sklgp.GaussianProcessRegressor(kernel=kernel, optimizer='fmin_l_bfgs_b', n_restarts_optimizer=50, alpha=1e-7)
 
-    if n_data <= n_dv/2:
+    if n_data == 1:
 
         raw_gradient = [0.0] * n_dv
 
@@ -146,6 +146,34 @@ def surrogate(config):
         #     for i_grd in range(dv_size[i_dv]):
         #         raw_gradient[k] = raw_gradient[k] * dv_scl / global_factor 
         #         k = k + 1
+
+    elif n_data > 1 and n_data < n_dv:
+        gp.fit(xt, yt)
+
+        # derivatives computation
+        def fun_prediction(x, gp):
+            fun_pred = gp.predict(x.reshape(1, -1))
+            return fun_pred
+
+        # querying the derivative at the last xt
+        raw_gradient = sci_opt.approx_fprime(xt[-1,:], fun_prediction, [np.sqrt(np.finfo(float).eps)]*n_dv, gp)
+
+        # finding the reduction factor necessary for having a raw_gradient with a norm smaller that 5e-6 after the scalings 
+        scaled_grad = raw_gradient
+        for i_dv,dv_scl in enumerate(dv_scales):
+            for i_grd in range(dv_size[i_dv]):
+                scaled_grad[k] = scaled_grad[k] / dv_scl 
+                k = k + 1
+        
+        i = 0
+        reduction_factor = 0.5**i
+        while np.linalg.norm(scaled_grad, 2) > 5e-6 / global_factor:
+            i += 1
+            reduction_factor = 0.5**i
+            scaled_grad = scaled_grad * 0.5
+        
+        raw_gradient = raw_gradient * reduction_factor
+
 
     else:
         gp.fit(xt, yt)
