@@ -160,6 +160,7 @@ def surrogate(config):
 
         # finding the reduction factor necessary for having a raw_gradient with a norm smaller that 5e-6 after the scalings 
         scaled_grad = raw_gradient
+        k = 0
         for i_dv,dv_scl in enumerate(dv_scales):
             for i_grd in range(dv_size[i_dv]):
                 scaled_grad[k] = scaled_grad[k] / dv_scl 
