@@ -16,6 +16,7 @@ from SU2 import io
 from SU2 import eval
 from SU2 import opt
 from SU2 import util
+from SU2 import surr
 
 try:
     import readline
