@@ -100,7 +100,7 @@ def lhs_initialize(project,x0=None,xb=None,n_samples=10):
 
     for i_smp in range(n_samples):
         
-        x = xx[i]
+        x = xx[i_smp]
 
         obj_f(x, project)
     
