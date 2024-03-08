@@ -39,7 +39,7 @@ from numpy import array, zeros
 #  Initialization
 # -------------------------------------------------------------------
 
-def lhs_initialize(project,x0=None,xb=None,its=100):
+def lhs_initialize(project,x0=None,xb=None,n_samples=10):
     """ result = lhs_initialize(project,x0=[],xb=[],its=100)
 
         Runs the surrogate initialization with
@@ -61,11 +61,6 @@ def lhs_initialize(project,x0=None,xb=None,its=100):
     # handle input cases
     if x0 is None: x0 = []
     if xb is None: xb = []
-
-    # function handles
-    func           = obj_f
-    f_eqcons       = con_ceq
-    f_ieqcons      = con_cieq
 
     # number of design variables
     dv_size = project.config['DEFINITION_DV']['SIZE']
@@ -97,13 +92,13 @@ def lhs_initialize(project,x0=None,xb=None,its=100):
     sys.stdout.write('Initialization parameters:\n')
     sys.stdout.write('Number of design variables: ' + str(len(dv_size)) + ' ( ' + str(n_dv) + ' ) \n' )
     sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
-    sys.stdout.write('Number of samples: ' + str(its) + '\n')
+    sys.stdout.write('Number of samples: ' + str(n_samples) + '\n')
     sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
     sys.stdout.write('Lower and upper bound for each independent variable: ' + str(xb) + '\n\n')
 
-    xx = lhc_unif(xb, its)
+    xx = lhc_unif(xb, n_samples)
 
-    for i_smp in range(0, len(xx)):
+    for i_smp in range(n_samples):
         
         x = xx[i]
 
