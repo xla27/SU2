@@ -192,7 +192,8 @@ def aerodynamics( config, state=None ):
 
     # does decomposition and deformation if the credibility variable is given as objective
     obj = config.OPT_OBJECTIVE
-    if (su2io.historyOutFields[obj]["TYPE"] == "CREDIBILITY"):
+    if su2io.historyOutFields[obj]["TYPE"] == "CREDIBILITY":
+        print('flag deformation')
         info = update_mesh(config,state)
 
     # ----------------------------------------------------
