@@ -115,8 +115,8 @@ def surrogate_initialization( filename                           ,
     n_dv              = sum(def_dv['SIZE'])                                # number of design variables
     n_samples         = int ( config.SAMPLES_NUMBER )                    # optimizer accuracy
     x0                = [0.0]*n_dv # initial design
-    xb_low            = - [float(config.OPT_LINE_SEARCH_BOUND)]*n_dv      # lower dv bound it includes the line search acceleration factor
-    xb_up             =   [float(config.OPT_LINE_SEARCH_BOUND)]*n_dv      # upper dv bound it includes the line search acceleration fa
+    xb_low            = [-float(config.OPT_LINE_SEARCH_BOUND)]*n_dv      # lower dv bound it includes the line search acceleration factor
+    xb_up             = [ float(config.OPT_LINE_SEARCH_BOUND)]*n_dv      # upper dv bound it includes the line search acceleration fa
     xb                = list(zip(xb_low, xb_up)) # design bounds
 
     # State
