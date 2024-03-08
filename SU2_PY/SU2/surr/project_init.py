@@ -86,7 +86,7 @@ class Project(object):
             config = project.unpack_dvs(dvs)
     """
 
-    _design_folder = 'INITILIZATION/INIT_*'
+    _design_folder = 'INITIALIZATION/INIT_*'
     _design_number = '%03d'
 
 
