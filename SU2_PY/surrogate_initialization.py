@@ -105,7 +105,6 @@ def surrogate_initialization( filename                           ,
     config = SU2.io.Config(filename)
     config.NUMBER_PART   = partitions
     config.NZONES        = int( nzones )
-    config.OPT_OBJECTIVE = config.INITIALIZATION
     if quiet: config.CONSOLE = 'CONCISE'
 
 
