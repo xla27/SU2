@@ -102,7 +102,7 @@ def lhs_initialize(project,x0=None,xb=None,its=100):
     sys.stdout.write('Lower and upper bound for each independent variable: ' + str(xb) + '\n\n')
 
     xx = lhc_unif(xb, its)
-
+    print(xx)
     for i_smp in range(0, xx.shape[0]):
         
         x = list(xx[i,:])
