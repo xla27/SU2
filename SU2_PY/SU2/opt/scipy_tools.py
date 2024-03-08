@@ -385,7 +385,7 @@ def obj_f(x,project):
     for this_obj in obj_list:
         obj = obj+this_obj
 
-    print(obj)
+    print('obj_f =\t', obj)
 
     return obj
 
@@ -409,7 +409,7 @@ def obj_df(x,project):
             idv+=1
     dobj = array( dobj )
 
-    print(dobj)
+    print('obj_df =\t', dobj)
 
     return dobj
 
@@ -428,7 +428,7 @@ def con_ceq(x,project):
     if cons: cons = array(cons)
     else:    cons = zeros([0])
 
-    print(cons)
+    print('con_ceq =\t', cons)
 
     return cons
 
@@ -448,7 +448,7 @@ def con_dceq(x,project):
     if dcons: dcons = array(dcons)
     else:     dcons = zeros([0,dim])
 
-    print(dcons)
+    print('con_dceq =\t', dcons)
 
     return dcons
 
@@ -467,7 +467,7 @@ def con_cieq(x,project):
     if cons: cons = array(cons)
     else:    cons = zeros([0])
 
-    print(-cons)
+    print('-con_cieq =\t', -cons)
 
     return -cons
 
@@ -487,6 +487,6 @@ def con_dcieq(x,project):
     if dcons: dcons = array(dcons)
     else:     dcons = zeros([0,dim])
 
-    print(-dcons)
+    print('-con_dcieq =\t', -dcons)
 
     return -dcons
