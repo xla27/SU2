@@ -379,8 +379,9 @@ def credibility(config, state=None):
     # # ----------------------------------------------------
 
     # does decomposition and deformation if the credibility variable is given as objective
-    obj = config.OPT_OBJECTIVE
-    if su2io.historyOutFields[obj]["TYPE"] == "CREDIBILITY":
+    def_objs = config['OPT_OBJECTIVE']
+    objectives = def_objs.keys()
+    if su2io.historyOutFields[objectives]["TYPE"] == "CREDIBILITY":
         print('flag deformation')
         info = update_mesh(config,state)
 
