@@ -100,10 +100,10 @@ def lhs_initialize(project,x0=None,xb=None,its=100):
     sys.stdout.write('Number of samples: ' + str(its) + '\n')
     sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
     sys.stdout.write('Lower and upper bound for each independent variable: ' + str(xb) + '\n\n')
-    print(xb, its)
+
     xx = lhc_unif(xb, its)
-    print(xx)
-    for i_smp in range(0, xx.shape[0]):
+
+    for i_smp in range(0, len(xx)):
         
         x = list(xx[i,:])
 
