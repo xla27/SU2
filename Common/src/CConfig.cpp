@@ -2780,6 +2780,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Maximum iterations for EPM problems*/
   addPythonOption("EPM_ITER");
 
+  /* DESCRIPTION: Initialization objective function*/
+  addPythonOption("INITIALIZATION");
+
+  /* DESCRIPTION: Number of samples for surrogate initialization*/
+  addPythonOption("SAMPLES_NUMBER");
+
   /* DESCRIPTION: ParMETIS load balancing tolerance */
   addDoubleOption("PARMETIS_TOLERANCE", ParMETIS_tolerance, 0.02);
 
