@@ -105,7 +105,7 @@ def lhs_initialize(project,x0=None,xb=None,its=100):
 
     for i_smp in range(0, len(xx)):
         
-        x = list(xx[i,:])
+        x = xx[i]
 
         obj_f(x, project)
     
