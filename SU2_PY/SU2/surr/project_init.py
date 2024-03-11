@@ -189,6 +189,8 @@ class Project(object):
             # start design
             design = self.new_design(konfig)
 
+            print('New Sample')
+
             if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
                 print(os.path.join(self.folder,design.folder))
             timestamp = design.state.tic()
