@@ -146,8 +146,8 @@ def surrogate(config):
     n_data = yt.shape[0]
 
     theta0 = np.array([1e-1]).reshape(1,1)
-    if n_data >= n_dv:
-        theta0 = np.array([1e-1] * n_dv).reshape(n_dv,1) 
+    # if n_data >= n_dv:
+    #     theta0 = np.array([1e-1] * n_dv).reshape(n_dv,1) 
     
 
     # GP instantiation
