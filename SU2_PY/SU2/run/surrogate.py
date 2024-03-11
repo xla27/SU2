@@ -95,15 +95,16 @@ def surrogate(config):
     # reading the data from past EPM
     pull = []
     link = []
-    i = 1
+
 
     xt = np.empty((0, n_dv))
     yt = np.array([])
 
     # looping on INIT folders to read EPM data
+    i_init = 1
     isPath = True
     while isPath:
-        path = "../../../INITIALIZATION/INIT_" + str(i).zfill(3) + "/EPM"
+        path = "../../../INITIALIZATION/INIT_" + str(i_init).zfill(3) + "/EPM"
         isPath = os.path.exists(path)
 
         if isPath:
@@ -116,14 +117,14 @@ def surrogate(config):
             xt = np.vstack((xt, np.array(dv_vec)))
             yt = np.append(yt, func)
 
-        i += 1
-
+        i_init += 1
 
     
     # looping on DSN folders to read EPM data
+    i_dsn = 1    
     isPath = True
     while isPath:
-        path = "../../DSN_" + str(i).zfill(3) + "/EPM"
+        path = "../../DSN_" + str(i_dsn).zfill(3) + "/EPM"
         isPath = os.path.exists(path)
 
         if isPath:
@@ -136,7 +137,7 @@ def surrogate(config):
             xt = np.vstack((xt, np.array(dv_vec)))
             yt = np.append(yt, func)
 
-        i += 1
+        i_dsn += 1
     
     """GP characteristic lengthscales, if the training points are less than n_dv
     the GP is kept isotropic, if they are greater or equal than n_dv the process becomes
