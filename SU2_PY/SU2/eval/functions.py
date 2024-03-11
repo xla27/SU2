@@ -383,7 +383,6 @@ def credibility(config, state=None):
     objectives = def_objs.keys()
     print(objectives[0])
     if su2io.historyOutFields[objectives[0]]["TYPE"] == "CREDIBILITY":
-        print('flag deformation')
         info = update_mesh(config,state)
 
     # ----------------------------------------------------
