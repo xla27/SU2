@@ -99,7 +99,28 @@ def surrogate(config):
 
     xt = np.empty((0, n_dv))
     yt = np.array([])
+
+    # looping on INIT folders to read EPM data
+    isPath = True
+    while isPath:
+        path = "../../../INITIALIZATION/INIT_" + str(i).zfill(3) + "/EPM"
+        isPath = os.path.exists(path)
+
+        if isPath:
+
+            with su2io.redirect_folder(path, pull, link) as push:
+
+                func, dv_vec = su2io.tools.read_epm("epm.dat", objective)
+                
+            
+            xt = np.vstack((xt, np.array(dv_vec)))
+            yt = np.append(yt, func)
+
+        i += 1
+
+
     
+    # looping on DSN folders to read EPM data
     isPath = True
     while isPath:
         path = "../../DSN_" + str(i).zfill(3) + "/EPM"
