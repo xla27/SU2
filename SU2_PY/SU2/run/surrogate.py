@@ -139,10 +139,7 @@ def surrogate(config):
 
         i_dsn += 1
     
-    """GP characteristic lengthscales, if the training points are less than n_dv
-    the GP is kept isotropic, if they are greater or equal than n_dv the process becomes
-    anisotropic
-    """
+
     n_data = yt.shape[0]
 
     theta0 = np.array([1e-1]).reshape(1,1)
