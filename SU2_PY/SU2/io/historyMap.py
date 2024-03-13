@@ -352,6 +352,12 @@ history_header_map = {
         "HEADER": "Cred_CFz",
         "TYPE": "CREDIBILITY",
     },
+    "CREDIBILITY_EFFICIENCY": {
+        "DESCRIPTION": "Efficiency credibility coefficient",
+        "GROUP": "AERO_COEFF",
+        "HEADER": "Cred_CL/CD",
+        "TYPE": "CREDIBILITY",
+    },
     "DEFORM_ITER": {
         "DESCRIPTION": "Linear solver iterations for the mesh " "deformation",
         "GROUP": "DEFORM",
