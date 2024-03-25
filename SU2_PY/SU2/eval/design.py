@@ -379,6 +379,8 @@ def obj_df(dvs,config,state=None):
             if this_obj in su2io.historyOutFields:
                 if su2io.historyOutFields[this_obj]['TYPE'] == 'CREDIBILITY':
                     grad_method = "SURROGATE"
+                else:
+                    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT') 
             else:
                 grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')    
 
