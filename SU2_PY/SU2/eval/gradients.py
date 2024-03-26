@@ -58,7 +58,7 @@ def gradient(func_name, method, config, state=None):
         Redundancy if state.GRADIENTS has the key func_name.
 
     Executes in:
-        ./ADJOINT_* or ./FINDIFF or ./SURROGATE_
+        ./ADJOINT_* or ./FINDIFF or ./SURR_GRAD_*
 
     Inputs:
         func_name - SU2 objective function name
@@ -1294,7 +1294,7 @@ def surrogate(func_name, config, state=None):
         Direct Redundancy if state.FUNCTIONS has key func_name.
 
     Executes in:
-        ./SURROGATE_<func_name>
+        ./SURR_GRAD_<func_name>
 
     Inputs:
         func_name - SU2 objective function name
