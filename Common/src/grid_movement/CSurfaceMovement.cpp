@@ -5064,7 +5064,7 @@ void CSurfaceMovement::Rescale_Relaxation_Factor(CConfig* config) {
     su2double tempval = old_max * new_scale;
     int iii = 1;
     while (tempval > uplim) {
-      iii = iii * 10;
+      iii = iii * 3.0;
       tempval = old_max / iii;
     }
     new_scale = config->GetOpt_RelaxFactor() / iii;
