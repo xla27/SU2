@@ -2696,6 +2696,9 @@ void CSurfaceMovement::SetHicksHenne(CGeometry* boundary, CConfig* config, unsig
             Distance, Chord, AoA, ValCos, ValSin;
 
   bool upper = true;
+  if (config->GetKind_SU2() != SU2_COMPONENT::SU2_DOT) {
+    Rescale_Relaxation_Factor(config);
+  }
   su2double Scale = config->GetOpt_RelaxFactor();
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
