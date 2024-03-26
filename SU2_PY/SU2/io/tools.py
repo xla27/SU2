@@ -1163,6 +1163,7 @@ def write_surrogate(filename, xt, yt, grad):
     surr_file = open(filename, "w")
 
     surr_file.write("TRAINING DATA\n")
+    surr_file.write("\n")
     for i, yt in enumerate(yt):
         surr_file.write("Data N°" + str(i) + "\n")
         surr_file.write("Input = "+ str(xt[i,:]) + "\n")
