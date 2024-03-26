@@ -391,8 +391,11 @@ def credibility(config, state=None):
     #  Update Mesh
     # ----------------------------------------------------
 
-    # does decomposition and deformation
-    info = update_mesh(config, state)
+    # does decomposition and deformation if the credibility variable is given as objective
+    def_objs = config['OPT_OBJECTIVE']
+    objectives = def_objs.keys()
+    if su2io.historyOutFields[objectives[0]]["TYPE"] == "CREDIBILITY":
+        info = update_mesh(config,state)
 
     # ----------------------------------------------------
     #  Adaptation (not implemented)
@@ -495,6 +498,8 @@ def credibility(config, state=None):
     # perturbations and folders  
     folder = ["EPM/1c", "EPM/2c", "EPM/3c", "EPM/p1c1", "EPM/p1c2"]
     uq = [[1, "NO"], [2, "NO"], [3, "NO"], [1, "YES"], [2, "YES"]]
+    solution_filename = ["solution_epm_1c.dat", "solution_epm_2c.dat", "solution_epm_3c.dat", "solution_epm_p1c1.dat", "solution_epm_p1c2.dat"]
+
 
     for i in range(0,5):
         
@@ -507,6 +512,10 @@ def credibility(config, state=None):
             # set perturbation
             kkonfig.UQ_COMPONENT = uq[i][0]
             kkonfig.UQ_PERMUTE = uq[i][1]
+
+            # set solution filename
+            kkonfig['SOLUTION_FILENAME'] = solution_filename[i]
+
             with redirect_output(log_epm):
 
                 # # RUN DIRECT SOLUTION # #
@@ -524,7 +533,7 @@ def credibility(config, state=None):
                     kkonfig["ITER_AVERAGE_OBJ"] = info.WND_CAUCHY_DATA["ITER_AVERAGE_OBJ"]
                     kkonfig["UNST_ADJOINT_ITER"] = info.WND_CAUCHY_DATA["UNST_ADJOINT_ITER"]
 
-                su2io.restart2solution(kkonfig, info)
+                #su2io.restart2solution(kkonfig, info)   # Considera estendere restart2solution a EPM, inserendo un MATH_PROBLEM = EPM per distinguerlo da DIRECT
                 ztate.update(info)
 
                 # direct files to push
@@ -533,16 +542,16 @@ def credibility(config, state=None):
                 name = su2io.expand_time(name, kkonfig)
                 push.extend(name)
 
-                # pressure files to push
-                if "TARGET_CP" in info.FILES:
-                    push.append(info.FILES["TARGET_CP"])
+                # # pressure files to push
+                # if "TARGET_CP" in info.FILES:
+                #     push.append(info.FILES["TARGET_CP"])
 
-                # heat flux files to push
-                if "TARGET_HEATFLUX" in info.FILES:
-                    push.append(info.FILES["TARGET_HEATFLUX"])
+                # # heat flux files to push
+                # if "TARGET_HEATFLUX" in info.FILES:
+                #     push.append(info.FILES["TARGET_HEATFLUX"])
 
-                if "FLOW_META" in info.FILES:
-                    push.append(info.FILES["FLOW_META"])
+                # if "FLOW_META" in info.FILES:
+                #     push.append(info.FILES["FLOW_META"])
 
         # Updating performance parameters
         su2io.update_persurface(kkonfig, ztate)
