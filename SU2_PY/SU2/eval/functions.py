@@ -191,11 +191,15 @@ def aerodynamics( config, state=None ):
     # ----------------------------------------------------
 
     # does decomposition and deformation only if the credibility variable is not given as "first" objective
-    # at the same time, the second condition on DV_VALUE is needed in case of a non-null initial guess, to allow the mesh deformation
+    # at the same time, the second condition on existence of DEFORM folder is needed in case of a non-null initial guess, to allow the mesh deformation
     # when a credibility QoI is the objective and a direct QoI is a constraint
+    # if the first objective is not a credibility QoI it does the update_mesh as standard
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
-    if su2io.historyOutFields[objectives[0]]["TYPE"] != "CREDIBILITY" or config['DV_VALUE_NEW'] != config['DV_VALUE_OLD']:
+    if su2io.historyOutFields[objectives[0]]["TYPE"] == "CREDIBILITY":
+        if not os.path.isdir("DEFORM"):
+            info = update_mesh(config,state)
+    else:
         info = update_mesh(config,state)
 
     # ----------------------------------------------------
@@ -384,10 +388,12 @@ def credibility(config, state=None):
     # # ----------------------------------------------------
 
     # does decomposition and deformation if the credibility variable is given as objective
+    # for the check on the DEFORM look at aerodynamics() above
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
     if su2io.historyOutFields[objectives[0]]["TYPE"] == "CREDIBILITY":
-        info = update_mesh(config,state)
+        if not os.path.isdir("DEFORM"):
+            info = update_mesh(config,state)
 
     # ----------------------------------------------------
     #  Adaptation (not implemented)
