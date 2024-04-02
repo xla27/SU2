@@ -121,7 +121,10 @@ def shape_optimization( filename                           ,
     def_dv            = config.DEFINITION_DV                               # complete definition of the desing variable
     n_dv              = sum(def_dv['SIZE'])                                # number of design variables
     accu              = float ( config.OPT_ACCURACY ) * gradient_factor    # optimizer accuracy
-    x0                = [0.0]*n_dv # initial design
+    if 'DV_VALUE_OLD' in config:
+        x0            = config['DV_VALUE_OLD']
+    else:
+        x0            = [0.0]*n_dv # initial design
     xb_low            = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
     xb_up             = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
     xb                = list(zip(xb_low, xb_up)) # design bounds
