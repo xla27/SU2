@@ -324,6 +324,7 @@ def aerodynamics( config, state=None ):
     su2io.update_persurface(konfig,state)
     # check for custom objectives
     if config['OPT_OBJECTIVE'] == 'CUSTOM_OBJFUNC':
+        print(True)
         custom = su2util.ordered_bunch()
         custom['CUSTOM_OBJFUNC'] = state['FUNCTIONS']['COMBO']
         del state['FUNCTIONS']['COMBO']
