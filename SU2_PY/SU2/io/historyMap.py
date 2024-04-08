@@ -223,7 +223,7 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
            'GROUP': 'COMBO',
            'HEADER': 'ComboObj',
            'TYPE': 'COEFFICIENT'},
- 'CUSTOM': {'DESCRIPTION':'Custom obj. function value.',
+ 'CUSTOM_OBJFUNC': {'DESCRIPTION':'Custom obj. function value.',
             'GROUP': 'CUSTOM',
             'HEADER': 'CustomObj',
             'TYPE': 'COEFFICIENT'},
