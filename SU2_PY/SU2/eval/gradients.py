@@ -334,7 +334,6 @@ def adjoint( func_name, config, state=None ):
             push.extend(name)
 
     #: with output redirection
-    print(state)
 
     # return output
     grads = su2util.ordered_bunch()
