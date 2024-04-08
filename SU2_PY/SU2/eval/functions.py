@@ -326,6 +326,8 @@ def aerodynamics( config, state=None ):
     funcs = su2util.ordered_bunch()
     for key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
+    
+    print(state)
 
     return funcs
 
