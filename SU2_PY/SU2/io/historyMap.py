@@ -224,7 +224,7 @@ history_header_map = {'ADJOINT_DISP_X': {'DESCRIPTION': 'Root-mean square residu
            'HEADER': 'ComboObj',
            'TYPE': 'COEFFICIENT'},
  'CUSTOM_OBJFUNC': {'DESCRIPTION':'Custom obj. function value.',
-            'GROUP': 'CUSTOM',
+            'GROUP': 'COMBO',
             'HEADER': 'CustomObj',
             'TYPE': 'COEFFICIENT'},
  "CREDIBILITY_DRAG": {"DESCRIPTION": "Drag credibility coefficient",
