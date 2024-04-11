@@ -199,8 +199,11 @@ def aerodynamics(config, state=None):
     #  Update Mesh
     # ----------------------------------------------------
 
-    # does decomposition and deformation
-    info = update_mesh(config, state)
+    # does decomposition and deformation only if the credibility variable is not given as "first" objective
+    def_objs = config['OPT_OBJECTIVE']
+    objectives = def_objs.keys()
+    if su2io.historyOutFields[objectives[0]]["TYPE"] != "CREDIBILITY":
+        info = update_mesh(config,state)
 
     # ----------------------------------------------------
     #  Adaptation (not implemented)
