@@ -423,6 +423,14 @@ def credibility(config, state=None):
     #    state['ADAPTED_FUNC'] = True
 
     # ----------------------------------------------------
+    #  Direct solution 
+    # ----------------------------------------------------
+    
+    # it is considered within the 6 rans to compute the credibility indicator, 
+    # redundancy checks are already contained in aerodynamics()
+    direct_aero = aerodynamics(config, state)
+
+    # ----------------------------------------------------
     #  EPM Solution
     # ----------------------------------------------------
     opt_names = []
@@ -580,6 +588,9 @@ def credibility(config, state=None):
     creds = su2util.ordered_bunch()
     for key in su2io.per_surface_map.keys():
         per_vec = []
+        # performance from the direct simulation
+        per_vec.append(direct_aero[key])
+        # performance from the five epm's
         for ztate in ztates:
             per_vec.append(ztate["FUNCTIONS"][key])
         state['FUNCTIONS']['CREDIBILITY_' + key] = max(per_vec) - min(per_vec)
