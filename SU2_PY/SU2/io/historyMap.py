@@ -292,6 +292,12 @@ history_header_map = {
         "HEADER": "CL_Driver_Command",
         "TYPE": "RESIDUAL",
     },
+    'CUSTOM_OBJFUNC': {
+        'DESCRIPTION':'Custom obj. function value.',
+        'GROUP': 'COMBO',
+        'HEADER': 'CustomObj',
+        'TYPE': 'COEFFICIENT',
+    },
     "COMBO": {
         "DESCRIPTION": "Combined obj. function value.",
         "GROUP": "COMBO",
