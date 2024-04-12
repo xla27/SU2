@@ -209,7 +209,7 @@ def surrogate_initialization(
     relax_factor = float(config.OPT_RELAX_FACTOR)  # line search scale
     def_dv = config.DEFINITION_DV  # complete definition of the desing variable
     n_dv = sum(def_dv["SIZE"])  # number of design variables
-    n_samples = float(config.SAMPLES_NUMBER)  # optimizer accuracy
+    n_samples = int(config.SAMPLES_NUMBER)  # optimizer accuracy
     x0 = [0.0] * n_dv  # initial design
     xb_low = [
         float(bound_lower) / float(relax_factor)
