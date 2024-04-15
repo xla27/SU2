@@ -258,7 +258,7 @@ def surrogate_initialization(
         project = SU2.io.load_data(projectname)
         project.config = config
     else:
-        project = SU2.opt.Project(config, state)
+        project = SU2.surr.Project(config, state)
 
     # Optimize
     if initialization == 'LHS':
