@@ -427,8 +427,18 @@ def credibility(config, state=None):
     # ----------------------------------------------------
     
     # it is considered within the 6 rans to compute the credibility indicator, 
-    # redundancy checks are already contained in aerodynamics()
-    direct_aero = aerodynamics(config, state)
+    # if the direct is not run, it is run, otherwise direct coefficients are retrived from state
+    if not os.path.isdir("DIRECT"):
+        direct_aero = aerodynamics(config, state)
+    else:
+        direct_names = []
+        for key in su2io.historyOutFields:
+            if su2io.historyOutFields[key]["TYPE"] == "COEFFICIENT":
+                direct_names.append(key)
+        direct_aero = su2util.ordered_bunch()
+        for key in direct_names:
+            if key in state.FUNCTIONS:
+                direct_aero[key] = state.FUNCTIONS[key]
 
     # ----------------------------------------------------
     #  EPM Solution
