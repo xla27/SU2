@@ -136,9 +136,9 @@ def surrogate(config):
  
     n_data = yt.shape[0]
 
-    theta0 = np.array([1e-1]).reshape(1,1)
+    #theta0 = np.array([1e-1]).reshape(1,1)
     # if n_data >= n_dv:
-    #     theta0 = np.array([1e-1] * n_dv).reshape(n_dv,1) 
+    theta0 = np.array([1e-1] * n_dv).reshape(n_dv,1) 
     
     # GP instantiation
     kernel = sklgp.kernels.ConstantKernel(1.0, (1e-1**3, 1e1**2)) * sklgp.kernels.RBF(length_scale=theta0, length_scale_bounds=(1e-2, 1e2))
