@@ -160,7 +160,7 @@ def surrogate(config):
         #         raw_gradient[k] = raw_gradient[k] * dv_scl / global_factor 
         #         k = k + 1
 
-    elif n_data > 1 and n_data < n_dv:
+    else: #n_data > 1 and n_data < n_dv:
         gp.fit(xt, yt)
 
         # derivatives computation
@@ -189,16 +189,16 @@ def surrogate(config):
         raw_gradient = raw_gradient * reduction_factor
 
 
-    else:
-        gp.fit(xt, yt)
+    # else:
+    #     gp.fit(xt, yt)
 
-        # derivatives computation
-        def fun_prediction(x, gp):
-            fun_pred = gp.predict(x.reshape(1, -1))
-            return fun_pred
+    #     # derivatives computation
+    #     def fun_prediction(x, gp):
+    #         fun_pred = gp.predict(x.reshape(1, -1))
+    #         return fun_pred
 
-        # querying the derivative at the last xt
-        raw_gradient = sci_opt.approx_fprime(xt[-1,:], fun_prediction, [np.sqrt(np.finfo(float).eps)]*n_dv, gp)
+    #     # querying the derivative at the last xt
+    #     raw_gradient = sci_opt.approx_fprime(xt[-1,:], fun_prediction, [np.sqrt(np.finfo(float).eps)]*n_dv, gp)
     
 
 
