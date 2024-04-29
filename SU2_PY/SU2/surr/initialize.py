@@ -33,6 +33,7 @@ import sys
 
 from .. import eval as su2eval
 from numpy import array, zeros
+import numpy as np
 
 
 # -------------------------------------------------------------------
@@ -56,8 +57,6 @@ def lhs_initialize(project,x0=None,xb=None,n_samples=10):
        result - the outputs from lhs sampling
     """
 
-    # import scipy optimizer
-    from SU2.util import lhc_unif
 
     # handle input cases
     if x0 is None:
@@ -105,11 +104,14 @@ def lhs_initialize(project,x0=None,xb=None,n_samples=10):
         "Lower and upper bound for each independent variable: " + str(xb) + "\n\n"
     )
 
-    xx = lhc_unif(xb, n_samples)
+    # Latin hypercube sampling and 
+    xx = lhs_sampling(n_samples, n_dv)
 
-    for i_smp in range(n_samples):
-        
-        x = xx[i_smp]
+
+    for i_smp in range(n_samples): 
+
+        x_norm = np.asarray(xx[i_smp, :]).reshape(1,n_dv)
+        x = (norm_to_real(xb, x_norm)).reshape(n_dv,)
 
         obj_f(x, project)
     
@@ -245,3 +247,58 @@ def con_dcieq(x, project):
         dcons = zeros([0, dim])
 
     return -dcons
+
+
+def lhs_sampling(ndata, dim):
+    """
+    Function to perform Latin Hypercube Sampling.
+
+    Inputs:
+    - ndata is the number of required data
+    - dim is the dimension of the domain
+
+    Output:
+    - V_set is the set of sampled points
+    """
+
+    # Generating dim random indpendent partitions of the set {1,...,ndata} uniformly distributed on the interval (0,ndata!)
+    perm = np.zeros((dim,ndata))
+    set =  np.linspace(1,ndata,ndata)
+    for k in range(0,dim):
+        perm[k,:] = np.random.permutation(set)
+    # Vector LHS
+    V_set = np.zeros((ndata,dim))
+    for j in range(0,ndata):
+        for k in range(0,dim):
+            V_set[j,k] = (np.random.rand() + perm[k,j] - 1) / ndata
+
+    return V_set
+
+
+def norm_to_real(xb, x):
+    """
+    Function to transform from unit hypercube to real domain.
+
+    Inputs:
+    - xb is the zip of the domain bounds
+    - x is the row vector containing the coordinates of the point in the [0,1] hypercube
+
+    Output:
+    - x_real is the row vector in the real domain
+    """
+    xb = list(zip(*xb))
+    bndlw = np.array(xb[0])
+    bndup = np.array(xb[1])
+    # Transformation matrix and constant vector
+    dim = len(bndup)
+    T_vec = np.zeros(dim)
+    b_vec = np.zeros(dim)
+    for i in range(0, dim):
+        T_vec[i] = bndup[i] - bndlw[i]
+        b_vec[i] = bndlw[i]
+    T_mat = np.diag(T_vec)
+    # Transformation 
+    x_real = T_mat @ x.T + b_vec.reshape(dim,1)
+    # Output has to be a row vector
+    x_real = x_real.T
+    return x_real
