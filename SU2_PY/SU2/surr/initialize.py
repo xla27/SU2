@@ -109,11 +109,16 @@ def lhs_initialize(project,x0=None,xb=None,n_samples=10):
 
 
     for i_smp in range(n_samples): 
+         
+        sys.stdout.write('\tSample ' + str(i_smp) + ':\n')
 
         x_norm = np.asarray(xx[i_smp, :]).reshape(1,n_dv)
         x = (norm_to_real(xb, x_norm)).reshape(n_dv,)
+        sys.stdout.write('\t\tDVs: ' + str(x) + '\n')
 
         obj_f(x, project)
+        last_design = project.designs[-1]
+        sys.stdout.write('\t\t' + str(obj.keys()[0]) + ' = ' + str(last_design.state.FUNCTIONS[obj.keys()[0]]) + '\n\n')
     
 
     # inserire una funzione che entra in tutte le cartelle INIT e le va a leggere e poi salva i risultati
