@@ -364,6 +364,12 @@ history_header_map = {
         "HEADER": "Cred_CL/CD",
         "TYPE": "CREDIBILITY",
     },
+    "CREDIBILITY_CUSTOM": {
+        "DESCRIPTION": "Credibility coefficient of a custom objective",
+        "GROUP": "COMBO",
+        "HEADER": "Cred_Custom",
+        "TYPE": "CREDIBILITY",
+    },
     "DEFORM_ITER": {
         "DESCRIPTION": "Linear solver iterations for the mesh " "deformation",
         "GROUP": "DEFORM",

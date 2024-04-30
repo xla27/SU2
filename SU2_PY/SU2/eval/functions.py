@@ -335,7 +335,7 @@ def aerodynamics(config, state=None):
     #: with output redirection
     su2io.update_persurface(konfig, state)
     # check for custom objectives
-    if objectives[0] == 'CUSTOM_OBJFUNC':
+    if objectives[0] == 'CUSTOM_OBJFUNC' or objectives[0] == 'CREDIBILITY_CUSTOM':
         custom = su2util.ordered_bunch()
         custom['CUSTOM_OBJFUNC'] = state['FUNCTIONS']['COMBO']
         del state['FUNCTIONS']['COMBO']
@@ -590,6 +590,13 @@ def credibility(config, state=None):
 
         # Updating performance parameters
         su2io.update_persurface(kkonfig, ztate)
+        
+        # checking for custom objectives
+        if objectives[0] == 'CUSTOM_OBJFUNC' or objectives[0] == 'CREDIBILITY_CUSTOM':
+            custom = su2util.ordered_bunch()
+            custom['CUSTOM_OBJFUNC'] = ztate['FUNCTIONS']['COMBO']
+            del ztate['FUNCTIONS']['COMBO']
+            ztate['FUNCTIONS']['CUSTOM_OBJFUNC'] = custom['CUSTOM_OBJFUNC']
 
         ztates.append(ztate)
 
@@ -605,6 +612,18 @@ def credibility(config, state=None):
             per_vec.append(ztate["FUNCTIONS"][key])
         state['FUNCTIONS']['CREDIBILITY_' + key] = max(per_vec) - min(per_vec)
         creds['CREDIBILITY_' + key] = state['FUNCTIONS']['CREDIBILITY_' + key]
+
+    # adding (if present) custom objectives
+    if objectives[0] == 'CUSTOM_OBJFUNC' or objectives[0] == 'CREDIBILITY_CUSTOM':
+        per_vec = []
+        # performance from the direct simulation
+        per_vec.append(direct_aero['CUSTOM_OBJFUNC'])
+        # performance from the five epm's
+        for ztate in ztates:
+            per_vec.append(ztate["FUNCTIONS"]['CUSTOM_OBJFUNC'])
+        state['FUNCTIONS']['CREDIBILITY_CUSTOM'] = max(per_vec) - min(per_vec)
+        creds['CREDIBILITY_CUSTOM'] = state['FUNCTIONS']['CREDIBILITY_CUSTOM']
+
         
     dv_vector = state.design_vector()
     
