@@ -70,6 +70,16 @@ def surrogate(config):
     # checking the function
     objective = konfig["OBJECTIVE_FUNCTION"]
 
+    # objective scale
+    # only matters if the function is considered as objective, not as constraint. 
+    # Indeed, "scale" multiplies both obj_f and obj_df, while "push" multiplies con_ceq
+    # and con_cieq only and not their gradients
+    def_objs = konfig["OPT_OBJECTIVE"]
+    if objective in def_objs.keys():
+        scale = def_objs[objective]["SCALE"]
+    else:
+        scale = 1
+
     # verbose
     if konfig.get("CONSOLE", "VERBOSE") in ["QUIET", "CONCISE"]:
         warnings.filterwarnings('ignore') 
@@ -181,7 +191,7 @@ def surrogate(config):
         
         i = 0
         reduction_factor = 0.5**i
-        while np.linalg.norm(scaled_grad, 2) > 5e-6 / global_factor:
+        while np.linalg.norm(scaled_grad, 2) > 5e-6 / (global_factor * scale):
             i += 1
             reduction_factor = 0.5**i
             scaled_grad = scaled_grad * 0.5
