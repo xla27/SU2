@@ -74,7 +74,7 @@ def lhs_initialize(project,x0=None,xb=None,n_samples=10):
     if not x0:
         x0 = [0.0] * n_dv
 
-    # prescale x0
+    # dv scales
     dv_scales = project.config["DEFINITION_DV"]["SCALE"]
     k = 0
     for i, dv_scl in enumerate(dv_scales):
@@ -115,6 +115,13 @@ def lhs_initialize(project,x0=None,xb=None,n_samples=10):
         x_norm = np.asarray(xx[i_smp, :]).reshape(1,n_dv)
         x = (norm_to_real(xb, x_norm)).reshape(n_dv,)
         sys.stdout.write('\t\tDVs: ' + str(x) + '\n')
+
+        # Apply pre-scaling to the variables
+        k = 0
+        for i, dv_scl in enumerate(dv_scales):
+            for j in range(dv_size[i]):
+                x[k] = x[k] / dv_scl
+                k = k + 1
 
         obj_f(x, project)
         last_design = project.designs[-1]
