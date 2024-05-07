@@ -25,8 +25,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys, shutil
+import os, sys, shutil, glob, time
 from optparse import OptionParser
+from warnings import warn
 
 sys.path.append(os.environ["SU2_RUN"])
 import SU2
@@ -261,6 +262,24 @@ def surrogate_initialization(
     else:
         project = SU2.opt.Project(config, state)
         project._design_folder = 'INITIALIZATION/INIT_*'
+        # removing old designs
+        pull, link = [], []
+        folder = "./"
+        with SU2.io.redirect_folder(folder, pull, link, force=True):
+            folders = glob.glob(project._design_folder)
+            if len(folders) > 0:
+                sys.stdout.write("Removing old designs in 10s.")
+                sys.stdout.flush()
+                if warn:
+                    time.sleep(10)
+                sys.stdout.write(" Done!\n\n")
+                for f in folders:
+                    shutil.rmtree(f)
+            #: if existing designs
+
+            # save project
+            SU2.io.save_data(project.filename, project)
+
 
     # Initialize
     if initialization == 'LHS':
