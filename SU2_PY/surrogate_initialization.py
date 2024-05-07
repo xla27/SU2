@@ -256,24 +256,27 @@ def surrogate_initialization(
 
     if os.path.exists(projectname):
         project = SU2.io.load_data(projectname)
+        project._design_folder = 'INITIALIZATION/INIT_*'
         project.config = config
     else:
-        project = SU2.surr.Project(config, state)
+        project = SU2.opt.Project(config, state)
+        project._design_folder = 'INITIALIZATION/INIT_*'
 
-    # Optimize
+    # Initialize
     if initialization == 'LHS':
-      SU2.surr.LHS(project,x0,xb,n_samples)
-    # if optimization == 'CG':
-    #   SU2.opt.CG(project,x0,xb,its,accu)
-    # if optimization == 'BFGS':
-    #   SU2.opt.BFGS(project,x0,xb,its,accu)
-    # if optimization == 'POWELL':
-    #   SU2.opt.POWELL(project,x0,xb,its,accu)
+        SU2.opt.LHS(project,x0,xb,n_samples)
 
 
     # rename project file
     if projectname:
         shutil.move("project.pkl", projectname)
+
+    # rename history file
+    output_format = config.TABULAR_FORMAT
+    if output_format == "CSV":
+        shutil.move("history_project.csv", "history_init.csv")
+    else:
+        shutil.move("history_project.dat", "history_init.dat")
 
     return project
 
