@@ -70,17 +70,6 @@ def lhs_initialize(project,x0=None,xb=None,n_samples=10):
     n_dv = sum(dv_size)
     project.n_dv = n_dv
 
-    # Initial guess
-    if not x0:
-        x0 = [0.0] * n_dv
-
-    # dv scales
-    dv_scales = project.config["DEFINITION_DV"]["SCALE"]
-    k = 0
-    for i, dv_scl in enumerate(dv_scales):
-        for j in range(dv_size[i]):
-            x0[k] = x0[k] / dv_scl
-            k = k + 1
 
     # scale accuracy
     obj = project.config["OPT_OBJECTIVE"]
@@ -89,8 +78,6 @@ def lhs_initialize(project,x0=None,xb=None,n_samples=10):
         obj_scale = obj_scale + [obj[this_obj]["SCALE"]]
 
 
-    # scale accuracy
-    eps = 1.0e-04
 
     # optimizer summary
     sys.stdout.write("Initialization parameters:\n")
@@ -104,9 +91,11 @@ def lhs_initialize(project,x0=None,xb=None,n_samples=10):
         "Lower and upper bound for each independent variable: " + str(xb) + "\n\n"
     )
 
-    # Latin hypercube sampling and 
+    # Latin hypercube sampling  
     xx = lhs_sampling(n_samples, n_dv)
-
+    
+    # dv scales
+    dv_scales = project.config["DEFINITION_DV"]["SCALE"]
 
     for i_smp in range(n_samples): 
          

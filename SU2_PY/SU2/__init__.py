@@ -18,7 +18,6 @@ from SU2 import run
 from SU2 import io
 from SU2 import eval
 from SU2 import opt
-from SU2 import surr
 from SU2 import util
 
 try:
