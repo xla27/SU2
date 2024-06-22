@@ -5374,6 +5374,20 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           if (!DiscreteAdjoint)
             SU2_MPI::Error("Adaptation sensor GOAL can only be computed for MATH_PROBLEM = DISCRETE_ADJOINT.", CURRENT_FUNCTION);
         }
+        if (nemo) {
+          if (Adap_Sensor[iSensor] == "GOAL")
+            SU2_MPI::Error("Adaptation sensor GOAL is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
+
+          if (Adap_Sensor[iSensor] == "TEMPERATURE")
+            SU2_MPI::Error("Adaptation sensor TEMPERATURE is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
+
+          if (Adap_Sensor[iSensor] == "ENERGY")
+            SU2_MPI::Error("Adaptation sensor ENERGY is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
+
+          if (Adap_Sensor[iSensor] == "DENSITY")
+            SU2_MPI::Error("Adaptation sensor DENSITY is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
+        }
+
       }
       else {
         SU2_MPI::Error(string("Invalid adaptation sensor: ") + Adap_Sensor[iSensor] + string("; must be GOAL, MACH, or PRES."), CURRENT_FUNCTION);
