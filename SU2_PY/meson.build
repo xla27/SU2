@@ -5,6 +5,7 @@ install_data(['continuous_adjoint.py',
 	     'parallel_computation.py',
 	     'parallel_computation_fsi.py',
 	     'shape_optimization.py',
+           'surrogate_initialization.py',
 	     'merge_solution.py',
 	     'set_ffd_design_var.py',
 	     'compute_polar.py',
@@ -35,6 +36,7 @@ install_data(['SU2/io/config.py',
 
 install_data(['SU2/opt/project.py',
               'SU2/opt/scipy_tools.py',
+              'SU2/opt/initialize.py',
               'SU2/opt/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/opt'))
 
@@ -45,6 +47,8 @@ install_data(['SU2/run/adjoint.py',
               'SU2/run/merge.py',
               'SU2/run/geometry.py',
               'SU2/run/projection.py',
+              'SU2/run/epm.py',
+              'SU2/run/surrogate.py',
               'SU2/run/__init__.py'],
 	      install_dir: join_paths(get_option('bindir'), 'SU2/run'))
 
