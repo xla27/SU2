@@ -82,6 +82,7 @@ def run(
     own_cool=True,
     own_mel=True,
     own_mlpcpp=True,
+    own_amg=True
 ):
 
     # Set up the build environment, i.e. clone or download submodules
@@ -95,6 +96,7 @@ def run(
         own_cool=own_cool,
         own_mel=own_mel,
         own_mlpcpp=own_mlpcpp,
+        own_amg=own_amg
     )
 
     if own_meson:
@@ -142,6 +144,11 @@ if __name__ == "__main__":
         help="do not download copy of MLpCpp",
         action="store_false",
     )
+    parser.add_argument(
+        "--no-amg",
+        help="do not download copy of PyAmg I/O",
+        action="store_false",
+    )
     args = parser.parse_args()
 
     run(
@@ -153,4 +160,5 @@ if __name__ == "__main__":
         own_cool=args.no_coolprop,
         own_mel=args.no_mel,
         own_mlpcpp=args.no_mlpcpp,
+        own_amg=args.no_amg
     )
