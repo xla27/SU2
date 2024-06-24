@@ -82,7 +82,7 @@ def run(
     own_cool=True,
     own_mel=True,
     own_mlpcpp=True,
-    own_amg=True
+    own_amg=True,
 ):
 
     # Set up the build environment, i.e. clone or download submodules
@@ -96,7 +96,7 @@ def run(
         own_cool=own_cool,
         own_mel=own_mel,
         own_mlpcpp=own_mlpcpp,
-        own_amg=own_amg
+        own_amg=own_amg,
     )
 
     if own_meson:
