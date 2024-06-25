@@ -52,14 +52,14 @@ namespace detail {
  */
 template<size_t nDim, class FieldType, class GradientType>
 void computeGradientsL2Projection(CSolver* solver,
-                                MPI_QUANTITIES kindMpiComm,
-                                PERIODIC_QUANTITIES kindPeriodicComm,
-                                CGeometry& geometry,
-                                const CConfig& config,
-                                const FieldType& field,
-                                size_t varBegin,
-                                size_t varEnd,
-                                GradientType& gradient)
+                                  MPI_QUANTITIES kindMpiComm,
+                                  PERIODIC_QUANTITIES kindPeriodicComm,
+                                  CGeometry& geometry,
+                                  const CConfig& config,
+                                  const FieldType& field,
+                                  size_t varBegin,
+                                  size_t varEnd,
+                                  GradientType& gradient)
 {
   const size_t nPointDomain = geometry.GetnPointDomain();
   const size_t nElem = geometry.GetnElem();
@@ -72,6 +72,93 @@ void computeGradientsL2Projection(CSolver* solver,
   const su2double factor = (nDim == 2) ? 1.0/6.0 : 1.0/24.0;
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
+
+  for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
+  {
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      for (size_t iDim = 0; iDim < nDim; ++iDim)
+        gradient(iPoint, iVar, iDim) = 0.0;
+  }
+
+  /*--- For each volume integrate over its faces (edges). ---*/
+  auto nodes = geometry.nodes;
+  for (size_t iElem = 0; iElem < nElem; ++iElem)
+  {
+    auto elem = geometry.elem[iElem];
+
+    /*--- Add the contribution from each node of the volume. ---*/
+    for (size_t iFace = 0; iFace < nFace; ++iFace) {
+      const size_t iNode = nNodeFace - iFace;
+      const size_t iPoint = elem->GetNode(iNode);
+
+      /*--- Inward normal of opposite face ---*/
+      if (nDim == 2) {
+        const size_t jPoint = elem->GetNode(elem->GetFaces(iFace,0));
+        const size_t kPoint = elem->GetNode(elem->GetFaces(iFace,1));
+        normal[0] = nodes->GetCoord(jPoint, 1) - nodes->GetCoord(kPoint, 1);
+        normal[1] = nodes->GetCoord(kPoint, 0) - nodes->GetCoord(jPoint, 0);
+      }
+      /*---TODO: Implement cross-product for tets ---*/
+      else {
+      }
+
+      /*--- Gradient contribution of the node ---*/
+      for (size_t jNode = 0; jNode < nNode; ++jNode) {
+        const size_t jPoint = elem->GetNode(jNode);
+        if (!nodes->GetDomain(jPoint)) continue;
+        const su2double Vol = nodes->GetVolume(jPoint);
+        for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+          const su2double var = field(iPoint,iVar);
+          for (size_t iDim = 0; iDim < nDim; ++iDim) {
+            gradient(jPoint, iVar, iDim) += factor*var*normal[iDim]/Vol;
+          }
+        }
+      }
+    }
+  }
+
+  /*--- If no solver was provided we do not communicate ---*/
+
+  if (solver == nullptr) return;
+
+  /*--- Account for periodic contributions. ---*/
+
+  for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
+  {
+    solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+    solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+  }
+
+  /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
+
+  solver->InitiateComms(&geometry, &config, kindMpiComm);
+  solver->CompleteComms(&geometry, &config, kindMpiComm);
+
+}
+
+template<size_t nDim, class GradientType>
+void computeHessiansL2Projection(CSolver* solver,
+                                 MPI_QUANTITIES kindMpiComm,
+                                 PERIODIC_QUANTITIES kindPeriodicComm,
+                                 CGeometry& geometry,
+                                 const CConfig& config,
+                                 const GradientType& gradient,
+                                 size_t varBegin,
+                                 size_t varEnd,
+                                 GradientType& hessian)
+{
+  const size_t nPointDomain = geometry.GetnPointDomain();
+  const size_t nElem = geometry.GetnElem();
+  const size_t nFace = (nDim == 2) ? 3 : 4;
+  const size_t nNode = (nDim == 2) ? 3 : 4;
+  const size_t nNodeFace = nFace - 1; // Number of nodes on a face
+
+  su2double* normal = new su2double[nDim];
+
+  const su2double factor = (nDim == 2) ? 1.0/6.0 : 1.0/24.0;
+
+  /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
+
   for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
   {
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
@@ -79,7 +166,7 @@ void computeGradientsL2Projection(CSolver* solver,
         hessian(iPoint, iVar, iDim) = 0.0;
   }
 
-    /*--- For each volume integrate over its faces (edges). ---*/
+  /*--- For each volume integrate over its faces (edges). ---*/
   auto nodes = geometry.nodes;
   for (size_t iElem = 0; iElem < nElem; ++iElem)
   {
