@@ -9825,6 +9825,12 @@ public:
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
+  /*!
+   * \brief Get the kind of the turbulence model.
+   * \return Kind of the turbulence model.
+   */
+  bool GetBoolTurbModelSST(void) const { return (Kind_Turb_Model == TURB_MODEL::SST); }
+
     /*!
    * \brief Check if error estimation is being carried out
    * \return <code>TRUE<\code> if error estimation is taking place
