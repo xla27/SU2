@@ -124,7 +124,7 @@ class CScalarSolver : public CSolver {
 
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
 
-    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetScalarVar(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
     /*--- Call Numerics contribution which are Solver-Specifc. Implemented in the caller: Viscous_Residual.  ---*/
@@ -296,6 +296,31 @@ class CScalarSolver : public CSolver {
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SumEdgeFluxes(CGeometry* geometry);
+
+  /*!
+   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
+   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config, bool reconstruction = false) override;
+
+  /*!
+   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config, bool reconstruction = false) final;
+
+  /*!
+   * \brief Compute the limiter of the primitive variables.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) final;
 
  private:
   /*!
