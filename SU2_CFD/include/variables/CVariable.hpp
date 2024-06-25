@@ -209,15 +209,16 @@ public:
    * \param[in] value - identification of the non-physical point.
    */
   inline void SetNon_Physical(unsigned long iPoint, bool val_value) {
-    if (val_value) {
-      Non_Physical(iPoint) = val_value;
-      Non_Physical_Counter(iPoint) = 0;
-    } else {
-      Non_Physical_Counter(iPoint)++;
-      if (Non_Physical_Counter(iPoint) > 20) {
-        Non_Physical(iPoint) = false;
-      }
-    }
+    // if (val_value) {
+    //   Non_Physical(iPoint) = val_value;
+    //   Non_Physical_Counter(iPoint) = 0;
+    // } else {
+    //   Non_Physical_Counter(iPoint)++;
+    //   if (Non_Physical_Counter(iPoint) > 20) {
+    //     Non_Physical(iPoint) = false;
+    //   }
+    // }
+    Non_Physical(iPoint) = Non_Physical(iPoint) || val_value;
   }
 
   /*!
@@ -226,6 +227,14 @@ public:
    * \return Value of the Non-physical point.
    */
   inline bool GetNon_Physical(unsigned long iPoint) { return Non_Physical(iPoint); }
+
+  /*!
+   * \brief Reet the value of the non-physical point.
+   * \param[in] iPoint - Point index.
+   */
+  inline void ResetNon_Physical(unsigned long iPoint) {
+    Non_Physical(iPoint) = false;
+  }
 
   /*!
    * \brief Get the solution.
@@ -1654,6 +1663,11 @@ public:
   inline virtual su2double GetCrossDiff(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the value of the cross diffusion of tke and omega.
+   */
+  inline virtual bool GetCrossDiffLimited(unsigned long iPoint) const { return false; }
+
+  /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
    */
@@ -2197,6 +2211,20 @@ public:
    * \param[in] val - value of the Sensitivity
    */
   inline virtual void SetSensitivity(unsigned long iPoint, unsigned long iDim, su2double val) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] solution - Solution of the problem.
+   */
+  inline virtual void SetObjectiveTerm(unsigned long iPoint, unsigned long iVar, const su2double solution) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] solution - Solution of the problem.
+   */
+  inline virtual su2double GetObjectiveTerm(unsigned long iPoint, unsigned long iVar) { return 0.0; }
 
   /*!
    * \brief Get the Sensitivity at the node
