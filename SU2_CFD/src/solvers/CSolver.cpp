@@ -1698,7 +1698,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_GRAD_REC:
           case PRIMITIVE_GRAD_REC:
           case AUXVAR_GRADIENT:
-          case GRADIENT_ADAPT
+          case GRADIENT_ADAPT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
