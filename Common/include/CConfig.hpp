@@ -873,6 +873,7 @@ private:
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
+  EddyViscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
@@ -912,6 +913,7 @@ private:
   Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
   Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
   Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
+  EddyViscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
   Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
   Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
@@ -1747,6 +1749,12 @@ public:
   su2double GetViscosity_FreeStream(void) const { return Viscosity_FreeStream; }
 
   /*!
+   * \brief Get the value of the freestream viscosity.
+   * \return Freestream viscosity.
+   */
+  su2double GetEddyViscosity_FreeStream(void) const { return EddyViscosity_FreeStream; }
+
+  /*!
    * \brief Get the value of the freestream density.
    * \return Freestream density.
    */
@@ -1964,6 +1972,12 @@ public:
    * \return Non-dimensionalized freestream viscosity.
    */
   su2double GetViscosity_FreeStreamND(void) const { return Viscosity_FreeStreamND; }
+
+  /*!
+   * \brief Get the value of the non-dimensionalized freestream viscosity.
+   * \return Freestream viscosity.
+   */
+  su2double GetEddyViscosity_FreeStreamND(void) const { return EddyViscosity_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream viscosity.
@@ -2612,6 +2626,12 @@ public:
   void SetViscosity_FreeStream(su2double val_viscosity_freestream) { Viscosity_FreeStream = val_viscosity_freestream; }
 
   /*!
+   * \brief Set the freestream viscosity.
+   * \param[in] val_viscosity_freestream - Value of the freestream viscosity.
+   */
+  void SetEddyViscosity_FreeStream(su2double val_eddyviscosity_freestream) { EddyViscosity_FreeStream = val_eddyviscosity_freestream; }
+ 
+  /*!
    * \brief Set the magnitude of the free-stream velocity.
    * \param[in] val_modvel_freestream - Magnitude of the free-stream velocity.
    */
@@ -2672,6 +2692,12 @@ public:
    * \param[in] val_viscosity_freestreamnd - Value of the non-dimensional free-stream viscosity.
    */
   void SetViscosity_FreeStreamND(su2double val_viscosity_freestreamnd) { Viscosity_FreeStreamND = val_viscosity_freestreamnd; }
+
+  /*!
+   * \brief Set the non-dimensional free-stream viscosity.
+   * \param[in] val_viscosity_freestreamnd - Value of the non-dimensional free-stream viscosity.
+   */
+  void SetEddyViscosity_FreeStreamND(su2double val_eddyviscosity_freestreamnd) { EddyViscosity_FreeStreamND = val_eddyviscosity_freestreamnd; }
 
   /*!
    * \brief Set the non-dimensional freestream turbulent kinetic energy.
