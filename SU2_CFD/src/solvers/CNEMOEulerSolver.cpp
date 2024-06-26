@@ -105,6 +105,10 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   if (navier_stokes) { nPrimVar   = nSpecies + nDim + 10; }
   else {               nPrimVar   = nSpecies +nDim +8;    }
   nPrimVarGrad = nSpecies + nDim + 8;
+  // Verify what does it mean nDim+3 in case of gaol oriented metric, since it is probably wrong
+  // since it is probably wrong in NEMO
+  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
+
 
   /*--- Initialize nVarGrad for deallocation ---*/
   nVarGrad     = nPrimVarGrad;
