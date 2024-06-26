@@ -30,6 +30,3 @@
 [submodule "externals/amgio"]
 	path = externals/amgio
 	url = https://github.com/bmunguia/amgio
-[submodule "amgio"]
-	path = amgio
-	url = https://github.com/bmunguia/amgio
