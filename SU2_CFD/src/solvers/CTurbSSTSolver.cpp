@@ -134,6 +134,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;
+  config->SetEddyViscosity_FreeStreamND(muT_Inf);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -190,6 +191,9 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
+
+  /*--- Compute primitives and gradients ---*/
+  Postprocessing(geometry, solver_container, config, iMesh);
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -200,15 +204,17 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Compute turbulence gradients. ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetSolution_Gradient_GG(geometry, config);
+    SetPrimitive_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetSolution_Gradient_LS(geometry, config);
+    SetPrimitive_Gradient_LS(geometry, config);
   }
 
   AD::StartNoSharedReading();
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+  SetPrimitive_Variables(solver_container);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -228,8 +234,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Compute the eddy viscosity ---*/
 
-    const su2double kine = nodes->GetSolution(iPoint,0);
-    const su2double omega = nodes->GetSolution(iPoint,1);
+    const su2double kine = nodes->GetPrimitive(iPoint,0);
+    const su2double omega = nodes->GetPrimitive(iPoint,1);
 
     const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag;
     const su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
@@ -276,6 +282,16 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   AD::EndNoSharedReading();
 }
 
+void CTurbSSTSolver::SetPrimitive_Variables(CSolver **solver_container) {
+
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      nodes->SetPrimitive(iPoint, iVar, nodes->GetSolution(iPoint, iVar)/flowNodes->GetDensity(iPoint));
+
+}
+
 void CTurbSSTSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, CConfig* config) {
 
@@ -319,7 +335,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
 
-    numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+    numerics->SetScalarVar(nodes->GetPrimitive(iPoint), nullptr);
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
 
     /*--- Set volume ---*/
@@ -512,8 +528,8 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
     }
 
     su2double Eddy_Visc = solver_container[FLOW_SOL]->GetEddyViscWall(val_marker, iVertex);
-    su2double k = nodes->GetSolution(iPoint_Neighbor,0);
-    su2double omega = nodes->GetSolution(iPoint_Neighbor,1);
+    su2double k = nodes->GetPrimitive(iPoint_Neighbor,0);
+    su2double omega = nodes->GetPrimitive(iPoint_Neighbor,1);
     su2double Density_Wall = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     su2double U_Tau = solver_container[FLOW_SOL]->GetUTau(val_marker, iVertex);
     su2double y = Y_Plus*Lam_Visc_Wall/(Density_Wall*U_Tau);
@@ -624,7 +640,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
        values for the turbulent state at the inflow. ---*/
       /*--- Load the inlet turbulence variables (uniform by default). ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_Vars);
+      conv_numerics->SetScalarVar(nodes->GetPrimitive(iPoint), Inlet_Vars);
 
       /*--- Set various other quantities in the solver class ---*/
 
@@ -715,8 +731,8 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
        that the turbulent variable is copied from the interior of the
        domain to the outlet before computing the residual. ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint),
-                                nodes->GetSolution(iPoint));
+      conv_numerics->SetScalarVar(nodes->GetPrimitive(iPoint),
+                                nodes->GetPrimitive(iPoint));
 
       /*--- Set Normal (negate for outward convention) ---*/
 
@@ -829,7 +845,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
       /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
+      conv_numerics->SetScalarVar(nodes->GetPrimitive(iPoint), solution_j);
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -853,7 +869,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
       visc_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
+      visc_numerics->SetScalarVar(nodes->GetPrimitive(iPoint), solution_j);
       visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
       /*--- Menter's first blending function ---*/
@@ -939,7 +955,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       /*--- Set the turbulent variable states. Use average span-wise values
              values for the turbulent state at the inflow. ---*/
 
-      conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
+      conv_numerics->SetScalarVar(nodes->GetPrimitive(iPoint), solution_j);
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -963,7 +979,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
       visc_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-      visc_numerics->SetScalarVar(nodes->GetSolution(iPoint), solution_j);
+      visc_numerics->SetScalarVar(nodes->GetPrimitive(iPoint), solution_j);
 
       visc_numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));
 
@@ -1058,5 +1074,209 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
       Inlet_TurbVars[iMarker][iVertex][1] = GetOmega_Inf();
     }
   }
+
+}
+
+// TODO: Move convective SST terms here
+void CTurbSSTSolver::ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                     unsigned long iPoint, vector<vector<double> > &weights) { }
+
+// TODO: Move viscous SST terms here
+void CTurbSSTSolver::ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                  unsigned long iPoint, vector<vector<double> > &weights) { }
+
+void CTurbSSTSolver::TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                    unsigned long iPoint, vector<vector<double> > &weights) {
+
+  // CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+  //           *varTur    = solver[TURB_SOL]->GetNodes(),
+  //           *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes(),
+  //           *varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+
+  // unsigned short iDim, jDim, iVar;
+  // const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+  // const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
+
+  // //--- First-order terms (error due to viscosity)
+  // su2double r, u[3], k, omega,
+  //           mu, mut,
+  //           R, cp, g, Prt;
+
+  // r = varFlo->GetDensity(iPoint);
+  // u[0] = varFlo->GetVelocity(iPoint, 0);
+  // u[1] = varFlo->GetVelocity(iPoint, 1);
+  // if (nDim == 3) u[2] = varFlo->GetVelocity(iPoint, 2);
+  // k = varTur->GetPrimitive(iPoint, 0);
+  // omega = varTur->GetPrimitive(iPoint, 1);
+
+  // mu  = varFlo->GetLaminarViscosity(iPoint);
+  // mut = nodes->GetmuT(iPoint);
+
+  // g    = config->GetGamma();
+  // R    = config->GetGas_ConstantND();
+  // cp   = (g/(g-1.))*R;
+  // Prt  = config->GetPrandtl_Turb();
+
+  // su2double gradu[3][3], gradT[3], gradk[3], grado[3], divu, taut[3][3], tautomut[3][3],
+  //           delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}},
+  //           pk = 0, pw = 0;
+
+  // const su2double F1 = varTur->GetF1blending(iPoint);
+  // const su2double F2 = varTur->GetF2blending(iPoint);
+
+  // const su2double alfa     = F1*constants[8] + (1.0 - F1)*constants[9];
+  // const su2double sigmak   = F1*constants[0] + (1.0 - F1)*constants[1];
+  // const su2double sigmao   = F1*constants[2] + (1.0 - F1)*constants[3];
+  // const su2double sigmao2  = constants[3];
+  // const su2double beta     = F1*constants[4] + (1.0 - F1)*constants[5];
+  // const su2double betastar = constants[6];
+  // const su2double a1       = constants[7];
+  // const su2double CDkw     = varTur->GetCrossDiff(iPoint);
+
+  // // const su2double VorticityMag = max(GeometryToolbox::Norm(3, varFlo->GetVorticity(iPoint)), 1.0e-12);
+  // const su2double StrainMag = nodes->GetStrainMag(iPoint);
+
+  // // const bool stress_limited = (omega < VorticityMag*F2/a1);
+  // // const su2double zeta = max(omega,VorticityMag*F2/a1);
+  // const bool stress_limited = (omega < StrainMag*F2/a1);
+  // const su2double zeta = max(omega,StrainMag*F2/a1);
+
+  // for (iDim = 0; iDim < nDim; iDim++) {
+  //   for (jDim = 0 ; jDim < nDim; jDim++) {
+  //     gradu[iDim][jDim] = varFlo->GetGradient_Primitive(iPoint, iDim+1, jDim);
+  //   }
+  //   gradT[iDim] = varFlo->GetGradient_Primitive(iPoint, 0, iDim);
+  //   gradk[iDim] = varTur->GetGradient(iPoint, 0, iDim);
+  //   grado[iDim] = varTur->GetGradient(iPoint, 1, iDim);
+  // }
+
+  // //--- Account for wall functions
+  // // su2double wf = varFlo->GetTauWallFactor(iPoint);
+  // su2double wf = 1.0;
+
+  // divu = 0.0; for (iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
+
+  // for (iDim = 0; iDim < nDim; ++iDim) {
+  //   for (jDim = 0; jDim < nDim; ++jDim) {
+  //     taut[iDim][jDim] = wf*(mut*( gradu[jDim][iDim] + gradu[iDim][jDim] )
+  //                      - TWO3*r*k*delta[iDim][jDim]); // SST2003
+  //                     //  - TWO3*mut*divu*delta[iDim][jDim]); // SST2003m
+  //     tautomut[iDim][jDim] = wf*( gradu[jDim][iDim] + gradu[iDim][jDim]
+  //                          - TWO3*zeta*delta[iDim][jDim]); // SST2003
+  //                         //  - TWO3*divu*delta[iDim][jDim]); // SST2003m
+  //     pk += 1./wf*taut[iDim][jDim]*gradu[iDim][jDim];
+  //     pw += 1./wf*tautomut[iDim][jDim]*gradu[iDim][jDim];
+  //   }
+  // }
+
+  // const bool pk_limited    = (pk > 10.*betastar*r*omega*k);
+  // const bool pk_positive   = (pk >= 0);
+  // const bool pw_positive   = (pw >= 0);
+  // const bool cdkw_positive = (!varTur->GetCrossDiffLimited(iPoint));
+
+  // //--- Momentum weights
+  // vector<su2double> TmpWeights(weights[0].size(), 0.0);
+  // su2double factor = 0.0;
+  // for (iDim = 0; iDim < nDim; ++iDim) {
+  //   factor = -TWO3*divu*alfa*varAdjTur->GetGradient_Adapt(iPoint, 1, iDim)*pw_positive;
+  //   // if (!pk_limited) {
+  //   factor += -TWO3*divu*mut/r*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim)*pk_positive;
+  //   // }
+  //   for (jDim = 0; jDim < nDim; ++jDim) {
+  //     factor += (tautomut[iDim][jDim]+(gradu[iDim][jDim]+gradu[jDim][iDim]))*alfa*varAdjTur->GetGradient_Adapt(iPoint, 1, jDim)*pw_positive;
+  //     // if (!pk_limited) {
+  //     factor += (taut[iDim][jDim]+mut*(gradu[iDim][jDim]+gradu[jDim][iDim]))/r*varAdjTur->GetGradient_Adapt(iPoint, 0, jDim)*pk_positive;
+  //     // }
+  //   }
+  //   TmpWeights[iDim+1] += factor;
+  // }
+
+  // //--- k and omega weights
+  // factor = 0.0;
+  // for (iDim = 0; iDim < nDim; ++iDim) {
+  //   for (jDim = 0; jDim < nDim; ++jDim) {
+  //     iVar = iDim+1;
+  //     factor += (tautomut[iDim][jDim]+wf*TWO3*zeta*delta[iDim][jDim]) // SST2003
+  //     // factor += (tautomut[iDim][jDim]) // SST2003m
+  //             * (varAdjFlo->GetGradient_Adapt(iPoint, iVar, jDim)
+  //             + u[jDim]*varAdjFlo->GetGradient_Adapt(iPoint, (nVarFlo-1), iDim));
+  //   }
+  //   factor += cp/Prt*gradT[iDim]*varAdjFlo->GetGradient_Adapt(iPoint, (nVarFlo-1), iDim);
+  //   factor += sigmak*gradk[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 0, iDim)
+  //           // + sigmak*gradk[iDim]*varAdjFlo->GetGradient_Adapt(iPoint, (nVarFlo-1), iDim)
+  //           + sigmao*grado[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 1, iDim);
+  // }
+
+  // TmpWeights[nVarFlo+0] += factor/zeta;
+  // // TmpWeights[nVarFlo+1] += -k*factor/pow(zeta,2.)*(!stress_limited);
+  // TmpWeights[nVarFlo+1] += -k*factor/pow(zeta,2.);
+  // if (cdkw_positive) {
+  //   for (iDim = 0; iDim < nDim; ++iDim) {
+  //     TmpWeights[nVarFlo+0] += 2.*(1.-F1)*sigmao2/omega*grado[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 1, iDim);
+  //     TmpWeights[nVarFlo+1] += 2.*(1.-F1)*sigmao2/omega*gradk[iDim]*varAdjTur->GetGradient_Adapt(iPoint, 1, iDim);
+  //   }
+  // }
+
+  // //--- Density weight
+  // for (iDim = 0; iDim < nDim; ++iDim) TmpWeights[0] += -u[iDim]*TmpWeights[iDim+1];
+  // TmpWeights[0] += -k*TmpWeights[nVarFlo+0] - omega*TmpWeights[nVarFlo+1]
+  //                // + k/zeta*factor*(!stress_limited);
+  //                + k/zeta*factor;
+
+  // //--- Add TmpWeights to weights, then reset for second-order terms
+  // for (iVar = 0; iVar < nVarFlo+nVarTur; ++iVar) weights[1][iVar] += TmpWeights[iVar];
+  // std::fill(TmpWeights.begin(), TmpWeights.end(), 0.0);
+
+  // //--- Second-order terms (error due to gradients)
+  // if(nDim == 3) {
+  //   const unsigned short rki = 0, romegai = 1, rei = (nVarFlo - 1), xxi = 0, yyi = 3, zzi = 5;
+  //   TmpWeights[nVarFlo+0] += -(mu+sigmak*mut)/r*(varAdjTur->GetHessian(iPoint, rki, xxi)
+  //                                               +varAdjTur->GetHessian(iPoint, rki, yyi)
+  //                                               +varAdjTur->GetHessian(iPoint, rki, zzi)); // Hk
+  //                            // -(mu+mut*sigmak)/r*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+  //                            //                    +varAdjFlo->GetHessian(iPoint, rei, yyi)
+  //                            //                    +varAdjFlo->GetHessian(iPoint, rei, zzi)); // Hk
+  //   TmpWeights[nVarFlo+1] += -(mu+sigmao*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
+  //                                               +varAdjTur->GetHessian(iPoint, romegai, yyi)
+  //                                               +varAdjTur->GetHessian(iPoint, romegai, zzi)); // Homega
+
+  // }
+  // else {
+  //   const unsigned short rki = 0, romegai = 1, rei = (nVarFlo - 1), xxi = 0, yyi = 2;
+  //   TmpWeights[nVarFlo+0] += -(mu+sigmak*mut)/r*(varAdjTur->GetHessian(iPoint, rki, xxi)
+  //                                               +varAdjTur->GetHessian(iPoint, rki, yyi)); // Hk
+  //                            // -(mu+mut*sigmak)/r*(varAdjFlo->GetHessian(iPoint, rei, xxi)
+  //                            //                    +varAdjFlo->GetHessian(iPoint, rei, yyi)); // Hk
+  //   TmpWeights[nVarFlo+1] += -(mu+sigmao*mut)/r*(varAdjTur->GetHessian(iPoint, romegai, xxi)
+  //                                               +varAdjTur->GetHessian(iPoint, romegai, yyi)); // Homega
+  // }
+  // TmpWeights[0] += -k*TmpWeights[nVarFlo+0]-omega*TmpWeights[nVarFlo+1];
+
+  // //--- Add TmpWeights to weights
+  // weights[2][0]         += TmpWeights[0];
+  // weights[2][nVarFlo+0] += TmpWeights[nVarFlo+0];
+  // weights[2][nVarFlo+1] += TmpWeights[nVarFlo+1];
+
+  // //--- Zeroth-order terms due to production
+  // // if (!pk_limited){
+  // weights[0][nVarFlo+0] += TWO3*divu*varAdjTur->GetSolution(iPoint,0)*pk_positive;
+  // // }
+  // // else {
+  // //   weights[0][0]         += 20.*betastar*k*omega*varAdjTur->GetSolution(iPoint,0);
+  // //   weights[0][nVarFlo+0] += -20.*betastar*omega*varAdjTur->GetSolution(iPoint,0);
+  // //   weights[0][nVarFlo+1] += -20.*betastar*k*varAdjTur->GetSolution(iPoint,0);
+  // // }
+  // // weights[0][nVarFlo+1] += TWO3*alfa*divu*varAdjTur->GetSolution(iPoint,1)*(!stress_limited)*pw_positive;
+  // weights[0][nVarFlo+1] += TWO3*alfa*divu*varAdjTur->GetSolution(iPoint,1)*pw_positive;
+
+  // //--- Zeroth-order terms due to dissipation
+  // weights[0][0]         += -betastar*k*omega*varAdjTur->GetSolution(iPoint,0)
+  //                        - beta*pow(omega,2.)*varAdjTur->GetSolution(iPoint,1);
+  // weights[0][nVarFlo+0] += betastar*omega*varAdjTur->GetSolution(iPoint,0);
+  // weights[0][nVarFlo+1] += betastar*k*varAdjTur->GetSolution(iPoint,0)
+  //                        + 2.*beta*omega*varAdjTur->GetSolution(iPoint,1);
+
+  // //--- Zeroth-order terms due to cross-diffusion
+  // weights[0][nVarFlo+1] += (1. - F1)*CDkw/(r*omega)*varAdjTur->GetSolution(iPoint,1)*cdkw_positive;
 
 }
