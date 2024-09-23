@@ -90,6 +90,14 @@ def main():
         help="Number of Zones",
         metavar="ZONES",
     )
+    parser.add_option(
+        "-x",
+        "--xzero",
+        dest="xzero",
+        default=[],
+        help="Initial set of design variables",
+        metavar="INITIAL DESIGN",
+    )
 
     (options, args) = parser.parse_args()
 
@@ -189,6 +197,7 @@ def main():
         options.optimization,
         options.quiet,
         options.nzones,
+        options.xzero,
     )
 
 
@@ -203,6 +212,7 @@ def shape_optimization(
     optimization="SLSQP",
     quiet=False,
     nzones=1,
+    xzero=[],
 ):
     # Config
     config = SU2.io.Config(filename)
@@ -226,7 +236,15 @@ def shape_optimization(
     def_dv = config.DEFINITION_DV  # complete definition of the desing variable
     n_dv = sum(def_dv["SIZE"])  # number of design variables
     accu = float(config.OPT_ACCURACY) * gradient_factor  # optimizer accuracy
-    x0 = [0.0] * n_dv  # initial design
+    if not xzero:
+        x0 = [0.0] * n_dv  # initial design
+    else:
+        x0 = []
+        with open(xzero, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if line and not line.startswith('#'):  # Ignore empty or commented lines
+                    x0.append(float(line))
     xb_low = [
         float(bound_lower) / float(relax_factor)
     ] * n_dv  # lower dv bound it includes the line search acceleration factor
