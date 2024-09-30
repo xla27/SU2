@@ -164,7 +164,8 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
       (config->GetDesign_Variable(0) == FFD_NACELLE) || (config->GetDesign_Variable(0) == FFD_GULL) ||
       (config->GetDesign_Variable(0) == FFD_TWIST) || (config->GetDesign_Variable(0) == FFD_ROTATION) ||
       (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) || (config->GetDesign_Variable(0) == FFD_CAMBER) ||
-      (config->GetDesign_Variable(0) == FFD_THICKNESS) || (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK)) {
+      (config->GetDesign_Variable(0) == FFD_THICKNESS) || (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK) ||
+      (config->GetDesign_Variable(0) == FFD_TRANSLATION)) {
     /*--- Definition of the FFD deformation class ---*/
 
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
@@ -1006,6 +1007,7 @@ void CSurfaceMovement::CheckFFDDimension(CGeometry* geometry, CConfig* config, C
           if ((iIndex > lDegree) || (jIndex > mDegree) || (kIndex > nDegree)) OutOffLimits = true;
           break;
         case FFD_GULL:
+        case FFD_TRANSLATION:
         case FFD_TWIST:
           jIndex = SU2_TYPE::Int(fabs(config->GetParamDV(iDV, 1)));
           if (jIndex > mDegree) OutOffLimits = true;
@@ -1591,6 +1593,9 @@ void CSurfaceMovement::ApplyDesignVariables(CGeometry* geometry, CConfig* config
         break;
       case FFD_THICKNESS:
         SetFFDThickness(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false);
+        break;
+      case FFD_TRANSLATION:
+        SetFFDTranslation(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false);
         break;
       case FFD_ANGLE_OF_ATTACK:
         SetFFDAngleOfAttack(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false);
@@ -2525,6 +2530,70 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry* geometry, CConfig* config, CFreeFo
     }
 
   } else {
+    return false;
+  }
+
+  return true;
+}
+
+bool CSurfaceMovement::SetFFDTranslation(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
+                                         CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+  unsigned short iOrder, jOrder, kOrder;
+  su2double Ampl, movement[3];
+  unsigned short index[3], iPlane, iFFDBox;
+  string design_FFDBox;
+  su2double Scale = config->GetOpt_RelaxFactor();
+
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+
+  if (ResetDef) {
+    for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++) ResetFFDBox[iFFDBox]->SetOriginalControlPoints();
+  }  
+
+  design_FFDBox = config->GetFFDTag(iDV);
+
+  if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
+
+    /*--- Check that it is possible to move the control point ---*/
+    jOrder = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+    for (iPlane = 0; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++){
+      if (jOrder == FFDBox->Get_Fix_JPlane(iPlane)) return false;
+    }
+
+    /*--- Change the value of the control point if move is true ---*/
+    if (config->GetnDV_Value(iDV) == 1) {
+      Ampl = config->GetDV_Value(iDV) * Scale;
+      movement[0] = config->GetParamDV(iDV, 2) * Ampl;
+      movement[2] = config->GetParamDV(iDV, 3) * Ampl;
+    } else {
+      movement[0] = config->GetDV_Value(iDV, 0);
+      movement[2] = config->GetDV_Value(iDV, 1);
+    }
+
+    for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++)
+      for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
+        index[0] = iOrder;
+        index[1] = jOrder;
+        index[2] = kOrder;
+
+        /*--- Check that it is possible to move the control point ---*/
+        for (iPlane = 0; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++){
+          if (iPlane == FFDBox->Get_Fix_IPlane(iPlane)) {
+            movement[0] = 0.0;
+            movement[2] = 0.0;
+          }
+        }
+        for (iPlane = 0; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++){
+          if (iPlane == FFDBox->Get_Fix_KPlane(iPlane)) {
+            movement[0] = 0.0;
+            movement[2] = 0.0;
+          }
+        }
+
+        FFDBox->SetControlPoints(index, movement);
+    }
+  } else{
     return false;
   }
 
