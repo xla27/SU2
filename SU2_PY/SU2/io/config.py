@@ -714,6 +714,17 @@ def read_config(filename):
                 data_dict[this_param] = this_sort
                 break
 
+            if (case('OPT_BOUND_UPPER')
+                or case('OPT_BOUND_LOWER')):
+                if '(' in this_value:
+                    # different bound for each variable
+                    this_value = this_value.strip("()")
+                    this_list = this_value.split(",") 
+                    data_dict[this_param] = this_list
+                else:
+                    data_dict[this_param] = this_value
+                break
+
             # otherwise
             # string parameters
             if case():
