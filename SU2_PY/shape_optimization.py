@@ -246,7 +246,7 @@ def shape_optimization(
             for line in file:
                 line = line.strip()
                 if line and not line.startswith('#'):  # Ignore empty or commented lines
-                    x0.append(float(line))
+                    x0.append(float(line) / float(relax_factor))
     
     # design variable bounds including line search acceleration factor
     if isinstance(config.OPT_BOUND_UPPER, list):
