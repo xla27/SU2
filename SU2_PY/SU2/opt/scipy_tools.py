@@ -90,13 +90,17 @@ def scipy_slsqp(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
     if not x0:
         x0 = [0.0] * n_dv
 
-    # prescale x0
+    # prescale x0 and bounds
     dv_scales = project.config["DEFINITION_DV"]["SCALE"]
     k = 0
+    xb = [list(xb[i]) for i in range(len(xb))]
     for i, dv_scl in enumerate(dv_scales):
         for j in range(dv_size[i]):
             x0[k] = x0[k] / dv_scl
+            xb[k][0] = xb[k][0] / dv_scl
+            xb[k][1] = xb[k][1] / dv_scl
             k = k + 1
+    xb = [tuple(xb[i]) for i in range(len(xb))]
 
     # scale accuracy
     obj = project.config["OPT_OBJECTIVE"]
