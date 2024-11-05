@@ -312,7 +312,7 @@ def scipy_l_bfgs_b(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
     # Only scale the accuracy for single-objective problems:
     if len(obj.keys()) == 1:
         accu = accu * obj_scale[0]
-        
+
     # scale accuracy
     eps = 1.0e-04
 
@@ -335,6 +335,7 @@ def scipy_l_bfgs_b(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
         x0=x0,
         func=func,
         fprime=fprime,
+        bounds=xb,
         args=(project,),
         pgtol=accu,
         epsilon=eps,
