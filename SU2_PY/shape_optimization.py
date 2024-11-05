@@ -71,7 +71,7 @@ def main():
         "--optimization",
         dest="optimization",
         default="SLSQP",
-        help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL)",
+        help="OPTIMIZATION techique (SLSQP, CG, L_BFGS_B, POWELL)",
         metavar="OPTIMIZATION",
     )
     parser.add_option(
@@ -306,8 +306,8 @@ def shape_optimization(
         SU2.opt.SLSQP(project, x0, xb, its, accu)
     if optimization == "CG":
         SU2.opt.CG(project, x0, xb, its, accu)
-    if optimization == "BFGS":
-        SU2.opt.BFGS(project, x0, xb, its, accu)
+    if optimization == "L_BFGS_B":
+        SU2.opt.LBFGSB(project, x0, xb, its, accu)
     if optimization == "POWELL":
         SU2.opt.POWELL(project, x0, xb, its, accu)
 
