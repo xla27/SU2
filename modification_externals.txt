@@ -1,0 +1,15 @@
+MODIFICATION OF externals/amgio TO PERFORM 3D ADAPTATION
+
+This is a manual modification since I cannot push to bmunguia's amgio repo
+
+Corrections are in externals/amgio/su2gmf/src/su2gmf.C
+
+- Line 426 in WriteMeshAndSol()
+ 
+    PyObject *oo = PyList_GetItem(pyTet, idx+4);
+
+- Line 780 in WriteMesh()
+
+    PyObject *oo = PyList_GetItem(pyTet, idx+4);
+
+Once these lines are modified, perform again the build through "./meson.py build"
