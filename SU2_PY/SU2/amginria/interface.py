@@ -313,3 +313,47 @@ def write_sol(sol_name, sol):
         raise RuntimeError("Empty solution given to write_sol.")
 
     su2gmf.WriteSol(sol_name, Ver, Sol, SolTag, NbrVer, Dim)
+
+def check_nonphysical(mesh):
+    '''
+    Function to check the presence of non-physical points in the interpolated solution.
+
+    Densities, energies and pressure should be clipped > 1E-20.
+    Temperatures should be clipped  50.0 < T < 8E4.
+    '''
+
+    if 'solution' in mesh:     Sol    = mesh['solution']
+    if 'solution_tag' in mesh: SolTag = mesh['solution_tag']
+
+    npoints, nfields = Sol.shape
+
+    # counting how many species and dims
+    nspecies = 0
+    ndims = 0
+    for i_tag, tag in enumerate(SolTag):
+        if 'Density' in tag:
+            nspecies += 1
+        if 'Momentum' in tag:
+            ndims += 1
+
+    rho_indexes   = list(range(nspecies))
+    rhoU_indexes  = list(range(nspecies, nspecies + ndims))
+    E_Eve_indexes = list(range(nspecies + ndims, nspecies + ndims + 2))
+    P_index       = nspecies + ndims + 3
+    T_indexes     = list(range(nspecies + ndims + 3, nspecies + ndims + 3 + 2))
+    V_indexes     = list(range(nspecies + ndims + 3 + 2, nspecies + ndims + 3 + 2 + ndims))
+
+    geq_zero_indexes = rho_indexes + E_Eve_indexes + [P_index]
+
+    for poin in range(npoints):
+
+        Sol[poin, geq_zero_indexes] = np.where(Sol[poin, geq_zero_indexes] > 1E-20, Sol[poin, geq_zero_indexes], 1E-20)
+        Sol[poin, T_indexes] = np.where(Sol[poin, T_indexes] > 50., Sol[poin, T_indexes], 50.)
+        Sol[poin, T_indexes] = np.where(Sol[poin, T_indexes] < 8E4, Sol[poin, T_indexes], 8E4)
+
+        # if np.any(np.isnan(Sol[poin,:])):
+        #     print(Sol[poin,:])
+
+    mesh['solution'] = Sol
+
+    return mesh
