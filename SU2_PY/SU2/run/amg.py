@@ -55,6 +55,10 @@ def amg(config):
             if not opt in config:
                 err += opt + '\n'
         raise AttributeError(err)
+    
+    #--- NEMO solver check
+    if 'NEMO' in config.SOLVER:
+        nemo = True
 
     #--- Print adap options
 
@@ -167,8 +171,9 @@ def amg(config):
             os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), solfil)
 
         #--- Set RESTART_SOL=YES for runs after adaptation
-        config_cfd.RESTART_SOL = 'YES'
-        config_cfd.RESTART_CFL = 'YES'
+        if not nemo:
+            config_cfd.RESTART_SOL = 'YES'
+            config_cfd.RESTART_CFL = 'YES'
 
         if gol:
             adjsolfil = f'restart_adj{sol_ext}'
