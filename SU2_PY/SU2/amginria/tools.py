@@ -198,10 +198,10 @@ def set_flow_config_ini(config, cur_solfil, sensor_tags, mesh_size):
     config.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'CFL_NUMBER']
     config.MATH_PROBLEM     = 'DIRECT'
     if 'GOAL' in sensor_tags:
-        config.VOLUME_OUTPUT  = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER'
+        config.VOLUME_OUTPUT  = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY'
         config.COMPUTE_METRIC = 'NO'
     else:
-        config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, METRIC'
+        config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, METRIC'
         config.COMPUTE_METRIC  = 'YES'
         config.ADAP_COMPLEXITY = int(mesh_size)
 
