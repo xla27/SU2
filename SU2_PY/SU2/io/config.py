@@ -420,6 +420,7 @@ def read_config(filename):
                         "FFD_CONTROL_POINT_2D",
                         "FFD_CAMBER_2D",
                         "FFD_THICKNESS_2D",
+                        "FFD_TRANSLATION",
                     ]:
                         this_dvFFDTag = this_dvParam[0]
                         this_dvParam[0] = "0"
@@ -440,6 +441,10 @@ def read_config(filename):
                             and this_dvParam[6] == 0
                         ):
                             this_dvSize = 3
+
+                    if data_dict["DV_KIND"][0] in ["FFD_TRANSLATION"]:
+                        if this_dvParam[2] == 0 and this_dvParam[3] == 0:
+                            this_dvSize = 2
 
                     dv_FFDTag = dv_FFDTag + [this_dvFFDTag]
                     dv_Parameters = dv_Parameters + [this_dvParam]
@@ -552,6 +557,7 @@ def read_config(filename):
                             "FFD_CONTROL_POINT_2D",
                             "FFD_CAMBER_2D",
                             "FFD_THICKNESS_2D",
+                            "FFD_TRANSLATION",
                         ]:
                             this_dvFFDTag = this_dvParameters[0]
                             this_dvParameters[0] = "0"
@@ -571,6 +577,10 @@ def read_config(filename):
                                 and this_dvParameters[6] == 0
                             ):
                                 this_dvSize = 3
+
+                        if this_dvKind in ["FFD_TRANSLATION"]:
+                            if this_dvParameters[2] == 0 and this_dvParameters[3] == 0:
+                                this_dvSize = 2
 
                     # add to lists
                     dv_Kind = dv_Kind + [this_dvKind]
@@ -702,6 +712,17 @@ def read_config(filename):
                 #: for each definition
                 # save to output dictionary
                 data_dict[this_param] = this_sort
+                break
+
+            if (case('OPT_BOUND_UPPER')
+                or case('OPT_BOUND_LOWER')):
+                if '(' in this_value:
+                    # different bound for each variable
+                    this_value = this_value.strip("()")
+                    this_list = this_value.split(",") 
+                    data_dict[this_param] = this_list
+                else:
+                    data_dict[this_param] = this_value
                 break
 
             # otherwise
@@ -1121,6 +1142,7 @@ def write_config(filename, param_dict):
                             "FFD_CONTROL_POINT_2D",
                             "FFD_CAMBER_2D",
                             "FFD_THICKNESS_2D",
+                            "FFD_TRANSLATION",
                         ]:
                             n_param = len(new_value["PARAM"][i_dv])
                             output_file.write("%s , " % new_value["FFDTAG"][i_dv])

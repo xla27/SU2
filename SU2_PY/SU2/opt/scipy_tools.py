@@ -90,13 +90,17 @@ def scipy_slsqp(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
     if not x0:
         x0 = [0.0] * n_dv
 
-    # prescale x0
+    # prescale x0 and bounds
     dv_scales = project.config["DEFINITION_DV"]["SCALE"]
     k = 0
+    xb = [list(xb[i]) for i in range(len(xb))]
     for i, dv_scl in enumerate(dv_scales):
         for j in range(dv_size[i]):
             x0[k] = x0[k] / dv_scl
+            xb[k][0] = xb[k][0] / dv_scl
+            xb[k][1] = xb[k][1] / dv_scl
             k = k + 1
+    xb = [tuple(xb[i]) for i in range(len(xb))]
 
     # scale accuracy
     obj = project.config["OPT_OBJECTIVE"]
@@ -243,7 +247,7 @@ def scipy_cg(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
 # -------------------------------------------------------------------
 
 
-def scipy_bfgs(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
+def scipy_l_bfgs_b(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
     """result = scipy_bfgs(project,x0=[],xb=[],its=100,accu=1e-10)
 
     Runs the Scipy implementation of BFGS with
@@ -261,7 +265,7 @@ def scipy_bfgs(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
     """
 
     # import scipy optimizer
-    from scipy.optimize import fmin_bfgs
+    from scipy.optimize import fmin_l_bfgs_b
 
     # handle input cases
     if x0 is None:
@@ -279,7 +283,8 @@ def scipy_bfgs(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
         fprime = obj_df
 
     # number of design variables
-    n_dv = len(project.config["DEFINITION_DV"]["KIND"])
+    dv_size = project.config["DEFINITION_DV"]["SIZE"]
+    n_dv = sum(dv_size)
     project.n_dv = n_dv
 
     # Initial guess
@@ -288,18 +293,31 @@ def scipy_bfgs(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
 
     # prescale x0
     dv_scales = project.config["DEFINITION_DV"]["SCALE"]
-    x0 = [x0[i] / dv_scl for i, dv_scl in enumerate(dv_scales)]
+    k = 0
+    xb = [list(xb[i]) for i in range(len(xb))]
+    for i, dv_scl in enumerate(dv_scales):
+        for j in range(dv_size[i]):
+            x0[k] = x0[k] / dv_scl
+            xb[k][0] = xb[k][0] / dv_scl
+            xb[k][1] = xb[k][1] / dv_scl
+            k = k + 1
+    xb = [tuple(xb[i]) for i in range(len(xb))]
 
     # scale accuracy
     obj = project.config["OPT_OBJECTIVE"]
-    obj_scale = obj[obj.keys()[0]]["SCALE"]
-    accu = accu * obj_scale
+    obj_scale = []
+    for this_obj in obj.keys():
+        obj_scale = obj_scale + [obj[this_obj]["SCALE"]]
+
+    # Only scale the accuracy for single-objective problems:
+    if len(obj.keys()) == 1:
+        accu = accu * obj_scale[0]
 
     # scale accuracy
     eps = 1.0e-04
 
     # optimizer summary
-    sys.stdout.write("Broyden-Fletcher-Goldfarb-Shanno (BFGS) parameters:\n")
+    sys.stdout.write("Limited-memory Broyden-Fletcher-Goldfarb-Shanno with Box constraints (L-BFGS-B) parameters:\n")
     sys.stdout.write("Number of design variables: " + str(n_dv) + "\n")
     sys.stdout.write("Objective function scaling factor: " + str(obj_scale) + "\n")
     sys.stdout.write("Maximum number of iterations: " + str(its) + "\n")
@@ -313,17 +331,16 @@ def scipy_bfgs(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
     obj_f(x0, project)
 
     # Run Optimizer
-    outputs = fmin_bfgs(
+    outputs = fmin_l_bfgs_b(
         x0=x0,
-        f=func,
+        func=func,
         fprime=fprime,
+        bounds=xb,
         args=(project,),
-        gtol=accu,
+        pgtol=accu,
         epsilon=eps,
         maxiter=its,
-        full_output=True,
         disp=True,
-        retall=True,
     )
 
     # Done

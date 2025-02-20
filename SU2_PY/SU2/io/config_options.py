@@ -82,6 +82,7 @@ class DEFINITION_DV(ordered_bunch):
        -FFD_CAMBER      	 (  14, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind )
        -FFD_TWIST    	 (  15, Scale | Mark. List | FFD_BoxTag, j_Ind, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
        -FFD_THICKNESS 	 (  16, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind )
+       -FFD_TRANSLATION	 (  17, Scale | Mark. List | FFD_BoxTag, j_Ind, x_Disp, z_Disp )
        -FFD_ROTATION	 (  18, Scale | Mark. List | FFD_BoxTag, x_Axis, y_Axis, z_Axis, x_Turn, y_Turn, z_Turn )
        -FFD_ANGLE_OF_ATTACK  (  24, Scale | Mark. List | FFD_BoxTag, 1.0 )
 
@@ -137,6 +138,7 @@ class DV_KIND(ordered_bunch):
        -FFD_CAMBER      	 (  14, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind )
        -FFD_TWIST    	 (  15, Scale | Mark. List | FFD_BoxTag, j_Ind, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
        -FFD_THICKNESS 	 (  16, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind )
+       -FFD_TRANSLATION	 (  17, Scale | Mark. List | FFD_BoxTag, j_Ind, x_Disp, z_Disp )
        -FFD_ROTATION	 (  18, Scale | Mark. List | FFD_BoxTag, x_Axis, y_Axis, z_Axis, x_Turn, y_Turn, z_Turn )
        -FFD_ANGLE_OF_ATTACK  (  24, Scale | Mark. List | FFD_BoxTag, 1.0 )
 

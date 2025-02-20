@@ -2153,6 +2153,7 @@ enum ENUM_PARAM {
   FFD_CAMBER = 14,            /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_TWIST = 15,             /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
   FFD_THICKNESS = 16,         /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_TRANSLATION = 17,       /*!< \brief Free form deformation for 3D design (translation of a section). */
   FFD_ROTATION = 18,          /*!< \brief Free form deformation for 3D design (rotation around a line). */
   FFD_CONTROL_POINT_2D = 19,  /*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 20,         /*!< \brief Free form deformation for 3D design (camber change). */
@@ -2174,7 +2175,7 @@ enum ENUM_PARAM {
   TRANSLATE_GRID = 50,        /*!< \brief Translate the volume grid. */
   ROTATE_GRID = 51,           /*!< \brief Rotate the volume grid */
   SCALE_GRID = 52,            /*!< \brief Scale the volume grid. */
-  ANGLE_OF_ATTACK = 101       /*!< \brief Angle of attack for airfoils. */
+  ANGLE_OF_ATTACK = 101,       /*!< \brief Angle of attack for airfoils. */
 };
 static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_SETTING", FFD_SETTING)
@@ -2210,6 +2211,7 @@ static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("TRANSLATE_GRID", TRANSLATE_GRID)
   MakePair("ROTATE_GRID", ROTATE_GRID)
   MakePair("SCALE_GRID", SCALE_GRID)
+  MakePair("FFD_TRANSLATION", FFD_TRANSLATION)
 };
 
 /*!

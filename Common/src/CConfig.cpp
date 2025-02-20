@@ -2327,6 +2327,7 @@ void CConfig::SetConfig_Options() {
    - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
    - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
    - FFD_TWIST ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+   - FFD_TRANSLATION ( FFDBox ID, j_Ind, x_Disp, z_Disp )
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
@@ -6597,6 +6598,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case FFD_NACELLE:           cout << "FFD (nacelle) <-> "; break;
           case FFD_GULL:              cout << "FFD (gull) <-> "; break;
           case FFD_TWIST:             cout << "FFD (twist) <-> "; break;
+          case FFD_TRANSLATION:       cout << "FFD (translation) <-> "; break;
           case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
           case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
@@ -6633,6 +6635,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  SURFACE_BUMP) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
+        if (Design_Variable[iDV] == FFD_TRANSLATION) nParamDV = 4;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
@@ -6655,6 +6658,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_NACELLE) ||
                (Design_Variable[iDV] == FFD_GULL) ||
                (Design_Variable[iDV] == FFD_TWIST) ||
+               (Design_Variable[iDV] == FFD_TRANSLATION) ||
                (Design_Variable[iDV] == FFD_ROTATION) ||
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||

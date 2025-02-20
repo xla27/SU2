@@ -71,7 +71,7 @@ def main():
         "--optimization",
         dest="optimization",
         default="SLSQP",
-        help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL)",
+        help="OPTIMIZATION techique (SLSQP, CG, L_BFGS_B, POWELL)",
         metavar="OPTIMIZATION",
     )
     parser.add_option(
@@ -89,6 +89,14 @@ def main():
         default="1",
         help="Number of Zones",
         metavar="ZONES",
+    )
+    parser.add_option(
+        "-x",
+        "--xzero",
+        dest="xzero",
+        default=[],
+        help="Initial set of design variables",
+        metavar="INITIAL DESIGN",
     )
 
     (options, args) = parser.parse_args()
@@ -189,6 +197,7 @@ def main():
         options.optimization,
         options.quiet,
         options.nzones,
+        options.xzero,
     )
 
 
@@ -203,6 +212,7 @@ def shape_optimization(
     optimization="SLSQP",
     quiet=False,
     nzones=1,
+    xzero=[],
 ):
     # Config
     config = SU2.io.Config(filename)
@@ -213,26 +223,40 @@ def shape_optimization(
     config.GRADIENT_METHOD = gradient
 
     its = int(config.OPT_ITERATIONS)  # number of opt iterations
-    bound_upper = float(
-        config.OPT_BOUND_UPPER
-    )  # variable bound to be scaled by the line search
-    bound_lower = float(
-        config.OPT_BOUND_LOWER
-    )  # variable bound to be scaled by the line search
-    relax_factor = float(config.OPT_RELAX_FACTOR)  # line search scale
-    gradient_factor = float(
-        config.OPT_GRADIENT_FACTOR
-    )  # objective function and gradient scale
+
+    # variable bounds to be scaled by the line search
+    if isinstance(config.OPT_BOUND_UPPER, list):  # bounds different for each dv
+        bound_upper = [float(i) for i in config.OPT_BOUND_UPPER]   
+        bound_lower = [float(i) for i in config.OPT_BOUND_LOWER]   
+    else:  # bounds common for all dvs                                
+        bound_upper = float( config.OPT_BOUND_UPPER )
+        bound_lower = float( config.OPT_BOUND_LOWER )
+
+
+    relax_factor = float( config.OPT_RELAX_FACTOR)  # line search scale
+    gradient_factor = float( config.OPT_GRADIENT_FACTOR )  # objective function and gradient scale
     def_dv = config.DEFINITION_DV  # complete definition of the desing variable
     n_dv = sum(def_dv["SIZE"])  # number of design variables
     accu = float(config.OPT_ACCURACY) * gradient_factor  # optimizer accuracy
-    x0 = [0.0] * n_dv  # initial design
-    xb_low = [
-        float(bound_lower) / float(relax_factor)
-    ] * n_dv  # lower dv bound it includes the line search acceleration factor
-    xb_up = [
-        float(bound_upper) / float(relax_factor)
-    ] * n_dv  # upper dv bound it includes the line search acceleration fa
+    if not xzero:
+        x0 = [0.0] * n_dv  # initial design
+    else:
+        x0 = []
+        with open(xzero, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if line and not line.startswith('#'):  # Ignore empty or commented lines
+                    x0.append(float(line) / float(relax_factor))
+    
+    # design variable bounds including line search acceleration factor
+    if isinstance(config.OPT_BOUND_UPPER, list):
+        assert len(config.OPT_BOUND_UPPER) == n_dv, "Mismatch between number of individual bounds and design variables!"  
+        xb_up = [float(i) / float(relax_factor) for i in bound_upper]  
+        xb_low = [float(i) / float(relax_factor) for i in bound_lower]  
+    else:
+        xb_up = [ float(bound_upper) / float(relax_factor) ] * n_dv  
+        xb_low = [ float(bound_lower) / float(relax_factor) ] * n_dv  
+
     xb = list(zip(xb_low, xb_up))  # design bounds
 
     # State
@@ -282,8 +306,8 @@ def shape_optimization(
         SU2.opt.SLSQP(project, x0, xb, its, accu)
     if optimization == "CG":
         SU2.opt.CG(project, x0, xb, its, accu)
-    if optimization == "BFGS":
-        SU2.opt.BFGS(project, x0, xb, its, accu)
+    if optimization == "L_BFGS_B":
+        SU2.opt.LBFGSB(project, x0, xb, its, accu)
     if optimization == "POWELL":
         SU2.opt.POWELL(project, x0, xb, its, accu)
 

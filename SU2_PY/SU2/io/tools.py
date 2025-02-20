@@ -587,6 +587,7 @@ def get_dvMap():
         14: "FFD_CAMBER",
         15: "FFD_TWIST",
         16: "FFD_THICKNESS",
+        17: "FFD_TRANSLATION",
         18: "FFD_ROTATION",
         19: "FFD_CONTROL_POINT_2D",
         20: "FFD_CAMBER_2D",
@@ -766,6 +767,9 @@ def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=[]):
     elif kindID == "FFD_THICKNESS":
         header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r", %s, %s, %s")
+    elif kindID == "FFD_TRANSLATION":
+        header.append(r',"FFD_Box_ID","yIndex","xAxis","zAxis"')
+        write_format.append(r", %s, %s, %s, %s")
     elif kindID == "ANGLE_OF_ATTACK":
         pass
     elif kindID == "FFD_ANGLE_OF_ATTACK":
