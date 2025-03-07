@@ -59,6 +59,8 @@ def amg(config):
     #--- NEMO solver check
     if 'NEMO' in config.SOLVER:
         nemo = True
+    else: 
+        nemo = False
 
     #--- Print adap options
 
