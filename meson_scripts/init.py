@@ -48,8 +48,7 @@ def init_submodules(
     own_mpp=True,
     own_cool=True,
     own_mel=True,
-    own_mlpcpp=True,
-    own_amg=True
+    own_mlpcpp=True
 ):
 
     cur_dir = sys.path[0]
@@ -74,8 +73,6 @@ def init_submodules(
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_mlpcpp = "665c45b7d3533c977eb1f637918d5b8b75c07d3b"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
-    sha_version_amg = 'f35179788256949b874a75eb9b187b5ca68ed54d'
-    github_repo_amg = 'https://github.com/bmunguia/amgio'
 
     medi_name = "MeDiPack"
     codi_name = "CoDiPack"
@@ -86,7 +83,6 @@ def init_submodules(
     coolprop_name = "CoolProp"
     mel_name = "MEL"
     mlpcpp_name = "MLPCpp"
-    amg_name = 'amgio'
 
     base_path = cur_dir + os.path.sep + "externals" + os.path.sep
     alt_name_medi = base_path + "medi"
@@ -98,7 +94,6 @@ def init_submodules(
     alt_name_mpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "Mutationpp"
     alt_name_coolprop = cur_dir + os.path.sep + "subprojects" + os.path.sep + "CoolProp"
     alt_name_mlpcpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "MLPCpp"
-    alt_name_amg  = base_path + 'amgio'
 
     if method == "auto":
         is_git = is_git_directory(cur_dir)
@@ -130,8 +125,6 @@ def init_submodules(
             submodule_status(alt_name_mel, sha_version_mel)
         if own_mlpcpp:
             submodule_status(alt_name_mlpcpp, sha_version_mlpcpp)
-        if own_amg:
-            submodule_status(alt_name_amg, sha_version_amg)
     # Otherwise download the zip file from git
     else:
         if own_codi:
@@ -168,32 +161,7 @@ def init_submodules(
             download_module(
                 mlpcpp_name, alt_name_mlpcpp, github_repo_mlpcpp, sha_version_mlpcpp
             )
-        if own_amg:
-            download_module(
-                amg_name, alt_name_amg, github_repo_amg, sha_version_amg
-            )
 
-    
-    # Setup AMG interface
-    # Require at least python 3.7 for pyamg
-    log = open( 'amgio.log', 'w' )
-    err = open( 'amgio.err', 'w' )
-    if sys.version_info >= (3, 7):
-        import pkg_resources
-        required = {'pyamg','su2gmf'}
-        installed = {pkg.key for pkg in pkg_resources.working_set}
-        missing = required - installed
-
-        if 'su2gmf' in missing:
-            print('Installing su2gmf.')
-            cmd = sys.executable
-            ext_dir = alt_name_amg + '/su2gmf/'
-            subprocess.call(['swig', '-python', 'src/su2gmf.i'], cwd=ext_dir, stdout = log, stderr = err)
-            subprocess.call([cmd, '-m', 'pip', 'install', '.'], cwd=ext_dir, stdout = log, stderr = err)
-
-        # Setup pyamg
-        if 'pyamg' in missing:
-            install_pyamg(log, err)
 
 
 def is_git_directory(path="."):
@@ -345,26 +313,6 @@ def download_module(name, alt_name, git_repo, commit_sha):
             f = open(module_identifier, "w")
             f.close()
 
-
-def install_pyamg(log, err):
-  # Install pyAMG
-  if sys.platform == 'linux' or sys.platform == 'linux2':
-      print('Installing pyAMG for Linux.')
-      pyamg_whl = 'pyamg-1.0.0-cp37-cp37m-linux_x86_64.whl'
-
-  elif sys.platform == 'darwin':
-      print('Installing pyAMG for Mac.')
-      pyamg_whl = 'pyamg-1.0.1-cp37-cp37m-macosx_10_9_x86_64.whl'
-
-  pyamg_whl = 'externals/amgio/pyamg/python3/' + pyamg_whl
-  try:
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', pyamg_whl], cwd=sys.path[0], stdout=log, stderr = err)
-    log.close()
-    err.close()
-  except:
-      print('pyAMG installation failed')
-
-  return True
 
 
 if __name__ == "__main__":
