@@ -8,4 +8,3 @@ from .projection import projection
 from .deform import deform
 from .geometry import geometry
 from .merge import merge
-from .amg import amg

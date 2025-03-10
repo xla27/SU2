@@ -1,8 +1,8 @@
 #!/usr/bin/env python 
 
 ## \file mesh_adaptation.py
-#  \brief python script for mesh adaptation with SU2-AMG interface
-#  \author Brian Mungu\'ia
+#  \brief python script for mesh adaptation with SU2-MMG interface
+#  \author Alberto Perlini, Riccardo Guglielmi
 #  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
@@ -74,7 +74,7 @@ def mesh_adaptation( filename       ,
     config.NUMBER_PART = partitions
     
     # Call CFD to generate a solution
-    SU2.run.amg(config)
+    SU2.adap.mmg(config)
     
 #: def mesh_adaptation()
 
