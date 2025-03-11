@@ -40,78 +40,30 @@ def get_mesh_sizes(config):
 
 def get_mesh_size(mesh):
     """Get mesh size info from a python mesh structure"""
-    elts = {'xy':'vertices', 'xyz':'vertices', 'Tetrahedra':'tetrahedra', 'Triangles':'triangles', 'Edges':'edges'}
+    elts = {'xy':'Vertices', 'xyz':'Vertices', 'Tetrahedra':'Tetrahedra', 'Triangles':'Triangles', 'Edges':'Edges'}
     nelts = {}
     for k,v in elts.items():
-        if k not in mesh: continue
+        if v not in mesh.keys(): continue
 
-        nbe = len(mesh[k])
+        nbe = len(mesh[v])
         if nbe > 0: nelts.update({f'{v}': nbe})
 
     return nelts
 
-def get_amg_config(config_su2, dim):
+def get_mmg_config(config_su2, dim):
     """Load parameters from the SU2 config file into the AMG config dict"""
-    config_amg = dict()
+    config_mmg = dict()
 
-    if 'ADAP_HGRAD' in config_su2: config_amg['hgrad'] = float(config_su2['ADAP_HGRAD'])
+    if 'ADAP_HGRAD' in config_su2: config_mmg['hgrad'] = float(config_su2['ADAP_HGRAD'])
 
-    config_amg['hmax']        = float(config_su2['ADAP_HMAX'])
-    config_amg['hmin']        = float(config_su2['ADAP_HMIN'])
-    config_amg['Lp']          = float(config_su2['ADAP_NORM'])
-    config_amg['mesh_in']     = 'current.meshb'
-    config_amg['amg_log']     = 'amg.out'
-    config_amg['adap_source'] = ''
-
-    #--- Check for background surface mesh, and generate if it doesn't exist
-    cwd = os.path.join(os.getcwd(),'../..')
-    if 'ADAP_BACK' in config_su2:
-        config_amg['adap_back'] = os.path.join(cwd,config_su2['ADAP_BACK'])
-        if not config_su2['ADAP_BACK'] == config_su2['MESH_FILENAME']:
-            os.symlink(os.path.join(cwd, config_su2.ADAP_BACK), config_su2.ADAP_BACK)
-    else:
-        config_amg['adap_back'] = config_su2['MESH_FILENAME']
-
-    _, back_extension = os.path.splitext(config_amg['adap_back'])
-
-    if not os.path.exists(config_amg['adap_back']):
-        raise ValueError(f"Can't find background surface mesh: {config_amg['adap_back']}.")
-
-    print('Preprocessing background surface mesh.')
-    if back_extension == '.su2':
-        su2gmf.SU2toGMF(config_amg['adap_back'], '', 'mesh_back', '')
-    elif back_extension == '.meshb':
-        su2gmf.PreprocessMesh(config_amg['adap_back'], 'mesh_back.meshb', dim)
-    else:
-        raise ValueError(f'Unknown background mesh format: {back_extension}.')
-    config_amg['adap_back'] = os.path.join(cwd, 'adap/ite0/mesh_back.meshb')
-
-    #--- Preprocess su2 mesh
-    print('Preprocessing initial mesh.')
-    su2gmf.PreprocessMesh(config_su2['MESH_FILENAME'], config_su2['MESH_FILENAME'], 0)
-
-    #--- Add AMG command flags
-    #--- Background surface mesh
-    config_amg['options'] = f"-back {config_amg['adap_back']}"
-
-    #--- Invert background mesh
-    if 'ADAP_INV_BACK' in config_su2:
-        if(config_su2['ADAP_INV_BACK'] == 'YES'):
-            config_amg['options'] = config_amg['options'] + ' -inv-back'
-
-    #--- Metric orthogonal adaptation
-    if 'ADAP_ORTHO' in config_su2:
-        if(config_su2['ADAP_ORTHO'] == 'YES'):
-            config_amg['options'] = config_amg['options'] + ' -cart3d'
-
-    #--- Ridge detection
-    if 'ADAP_RDG' not in config_su2:
-        config_amg['options'] = config_amg['options'] + ' -nordg'
-    else:
-        if(config_su2['ADAP_RDG'] == 'NO'):
-            config_amg['options'] = config_amg['options'] + ' -nordg'
-
-    return config_amg
+    config_mmg['dim']         = int(dim)
+    config_mmg['hmax']        = float(config_su2['ADAP_HMAX'])
+    config_mmg['hmin']        = float(config_su2['ADAP_HMIN'])
+    config_mmg['hausd']       = float(config_su2['ADAP_HAUSD'])
+    config_mmg['Lp']          = float(config_su2['ADAP_NORM'])
+    config_mmg['mmg_log']     = 'mmg.out'
+    
+    return config_mmg
 
 def get_sub_iterations(config):
     """Get number of adaptation iterations for each mesh complexity"""
@@ -216,7 +168,7 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
     config.COMPUTE_METRIC       = 'YES'
     config.ADAP_COMPLEXITY      = int(mesh_size)
-    config.RESTART_CFL          = 'YES'
+    #config.RESTART_CFL          = 'YES'
 
 def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_iter, flow_cfl, sensor_tags, mesh_size):
     """Set primal config for current solution"""
@@ -384,7 +336,7 @@ def create_sensor(solution, sensor_tags):
 
 def print_adap_table(iter, sizes, subiter, nsubiter, mesh):
     """Print adapted mesh sizes to a table"""
-    dim = mesh['dimension']
+    dim = mesh['Dim']
 
     #--- Header
     if iter == 0 and subiter == 0:
@@ -405,13 +357,13 @@ def print_adap_table(iter, sizes, subiter, nsubiter, mesh):
         line = f'|{pad_nul}|{pad_nul}'
 
     nelts = get_mesh_size(mesh)
-    nvert = nelts['vertices']
-    ntria = nelts['triangles']
+    nvert = nelts['Vertices']
+    ntria = nelts['Triangles']
     if dim == 2:
-        nedge = nelts['edges']
+        nedge = nelts['Edges']
         line = f'{line}|    {subiter:<2}    | {nvert:<8} | {ntria:<8} | {nedge:<8} |'
     else:
-        ntetr = nelts['tetrahedra']
+        ntetr = nelts['Tetrahedra']
         line = f'{line}|    {subiter:<2}    | {nvert:<8} | {ntetr:<8} | {ntria:<8} |'
     print(line)
 

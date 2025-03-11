@@ -29,7 +29,7 @@ import os, shutil, copy, time
 
 from .. import io as su2io
 from .. import adap as su2adap
-from .interface import CFD as SU2_CFD
+from ..run.interface import CFD as SU2_CFD
 
 def mmg(config):
     """
@@ -43,11 +43,10 @@ def mmg(config):
 
     #--- Check config options related to mesh adaptation
 
-    pyadap_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_BACK', 'ADAP_HGRAD',
-                       'ADAP_RESIDUAL_REDUCTION', 'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER',
-                       'ADAP_CFL', 'ADAP_INV_BACK', 'ADAP_ORTHO', 'ADAP_RDG' ]
-    required_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_SENSOR', 'ADAP_HMAX',
-                         'ADAP_HMIN', 'MESH_FILENAME', 'RESTART_SOL', 'MESH_OUT_FILENAME' ]
+    pyadap_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 
+                      'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER', 'ADAP_CFL', 'ADAP_HAUSD' ]
+    required_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_HMAX', 'ADAP_HMIN', 'MESH_FILENAME', 
+                        'RESTART_SOL', 'MESH_OUT_FILENAME' ]
 
     if not all (opt in config for opt in required_options):
         err = '\n\n## ERROR : Missing options: \n'
@@ -59,6 +58,8 @@ def mmg(config):
     #--- NEMO solver check
     if 'NEMO' in config.SOLVER:
         nemo = True
+    else:
+        nemo = False
 
     #--- Print adap options
 
@@ -151,11 +152,19 @@ def mmg(config):
     else:
         print('\nRunning initial CFD solution.')
 
-    #--- Only allow binary restarts since WRT_BINARY_RESTART is deprecated
-    sol_ext = '.dat'
+    #--- Only allow ASCII restarts for file conversion
+    if not gol:
+        sol_ext_cfd = '.csv'
+        config_cfd.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+    if gol:
+        sol_ext_cfd = '.dat'
+        config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
+        sol_ext_cfd_ad = '.csv'
+        config_cfd_ad.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+
 
     meshfil = config['MESH_FILENAME']
-    solfil  = f'restart_flow{sol_ext}'
+    solfil  = f'restart_flow{sol_ext_cfd}'
     su2adap.set_flow_config_ini(config_cfd, solfil, adap_sensors, mesh_sizes[0])
 
     try: # run with redirected outputs
@@ -171,12 +180,12 @@ def mmg(config):
             os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), solfil)
 
         #--- Set RESTART_SOL=YES for runs after adaptation
-        if not nemo:
-            config_cfd.RESTART_SOL = 'YES'
-            config_cfd.RESTART_CFL = 'YES'
+        #if not nemo:
+            #config_cfd.RESTART_SOL = 'YES' WE NEED AN INTERPOLATOR!!!
+            #config_cfd.RESTART_CFL = 'YES'
 
         if gol:
-            adjsolfil = f'restart_adj{sol_ext}'
+            adjsolfil = f'restart_adj{sol_ext_cfd_ad}'
             su2adap.set_adj_config_ini(config_cfd_ad, solfil, adjsolfil, mesh_sizes[0])
 
             #--- If restarting, check for the existence of an adjoint restart
@@ -209,8 +218,8 @@ def mmg(config):
             suffix         = su2io.get_adjointSuffix(func_name)
             adjsolfil = su2io.add_suffix(adjsolfil, suffix)
 
-            #--- Set RESTART_SOL=YES for runs after adaptation
-            config_cfd_ad.RESTART_SOL = 'YES'
+            #--- Set RESTART_SOL=YES for runs after adaptation  WE NEED AN INTERPOLATOR!!!
+            #config_cfd_ad.RESTART_SOL = 'YES'    
 
     except:
         raise
@@ -244,49 +253,54 @@ def mmg(config):
 
             global_iter += 1
 
-            #--- Load su2 mesh
+            #--- Instantiating the mesh converter
+            fileconverter = su2adap.MeshSolConverter()
 
-            mesh = su2adap.read_mesh_and_sol(meshfil, solfil)
+            #--- Load and read .su2 mesh and dump .mesh file
 
-            #--- Write solution
-            su2adap.write_mesh_and_sol('flo.meshb', 'flo.solb', mesh)
+            fileconverter.SU2ToMeditMesh(meshfil, meshfil.replace('.su2', '.mesh'))
+
+            #--- Load and read .csv solution and dump .sol file
+
+            fileconverter.SU2ToMeditSol(solfil.replace(sol_ext_cfd,'.csv'), 
+                                        solfil.replace('.csv', '.sol'))
 
             mesh_size = int(mesh_sizes[iSiz])
             if iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
             config_mmg['size'] = mesh_size
 
-            #--- Add metric computed from SU2 to GMF sol
+            # if gol:
 
-            metric_wrap = su2adap.create_sensor(mesh, adap_sensors)
-            mesh['metric'] = metric_wrap['solution']
+            #     #--- Read and merge adjoint solution to be interpolated
 
-            if gol:
+            #     fileconverter.SU2ToMeditSol(adjsolfil, adjsolfil.replace('.csv', '.sol'))
 
-                #--- Read and merge adjoint solution to be interpolated
-
-                sol_adj = su2adap.read_sol(adjsolfil, mesh)
-                su2adap.merge_sol(mesh, sol_adj)
-
-                del sol_adj
 
             #--- Adapt mesh with MMG
+            meshin = config_cfd['MESH_FILENAME'].replace('.su2','.mesh')
+            meshout = config_cfd['MESH_FILENAME'].replace('.su2','_adap.mesh')
+            if gol:
+                adjsolfile = config_cfd_ad['RESTART_ADJ_FILENAME'].replace('.csv','.sol')
+                solfile = config_cfd['RESTART_FILENAME'].replace(sol_ext_cfd,'.sol')
+                su2adap.call_mmg(meshin, meshout, solfile, config_mmg)
+            else:
+                solfile = config_cfd['RESTART_FILENAME'].replace('.csv','.sol')
+                su2adap.call_mmg(meshin, meshout, solfile, config_mmg)
 
-            mesh_new = su2adap.call_mmg(mesh, config_mmg)
+            mesh_new = fileconverter.ReadMeshMedit(meshout)
 
-            #--- Remove extra files generated by MMG
+            #--- Dumping a copy of the adapted mesh 
+            fileconverter.WriteMeshSU2(meshout.replace('.mesh','.su2'))
 
-            extra_files=['back.meshb','meshp3_smoo.meshb','optim.0.meshb','optim.0.solb','subdom.meshb']
-            for file in extra_files:
-                try:
-                    os.remove(file)
-                except OSError:
-                    pass
+            #--- Reading the new output mesh
 
-            mesh_new['markers'] = mesh['markers']
-            mesh_new['dimension'] = mesh['dimension']
-            mesh_new['solution_tag'] = mesh['solution_tag']
+            # extra_files=['']
+            # for file in extra_files:
+            #     try:
+            #         os.remove(file)
+            #     except OSError:
+            #         pass
 
-            del mesh
 
             #--- Print mesh sizes
             su2adap.print_adap_table(iSiz, mesh_sizes, iSub, nSub, mesh_new)
@@ -295,33 +309,34 @@ def mmg(config):
             os.makedirs(os.path.join('..',dir))
             os.chdir(os.path.join('..',dir))
 
-            meshfil = 'mesh_adap.su2'
-            solfil  = f'flo{sol_ext}'
+            meshfil = config_cfd['MESH_FILENAME']
+            #solfil  = f'flo{sol_ext}'
 
-            su2adap.write_mesh_and_sol(meshfil, solfil, mesh_new)
+            fileconverter.WriteMeshSU2(meshfil)
 
-            if gol:
-                adjsolfil = f'adj{sol_ext}'
-                sol_adj = su2adap.split_adj_sol(mesh_new)
-                su2adap.write_sol(adjsolfil, sol_adj)
+            # if gol:
+            #     adjsolfil = f'adj{sol_ext}'
+            #     sol_adj = su2adap.split_adj_sol(mesh_new)
+            #     su2adap.write_sol(adjsolfil, sol_adj)
 
-            meshfil_gmf    = 'flo_itp.meshb'
-            solfil_gmf     = 'flo_itp.solb'
-            su2adap.write_mesh_and_sol(meshfil_gmf, solfil_gmf, mesh_new)
+            # meshfil_gmf    = 'flo_itp.meshb'
+            # solfil_gmf     = 'flo_itp.solb'
+            # su2adap.write_mesh_and_sol(meshfil_gmf, solfil_gmf, mesh_new)
 
             del mesh_new
 
-            if gol:
-                solfil_gmf_adj = 'adj_itp.solb'
-                su2adap.write_sol(solfil_gmf_adj, sol_adj)
-                del sol_adj
+            # if gol:
+            #     solfil_gmf_adj = 'adj_itp.solb'
+            #     su2adap.write_sol(solfil_gmf_adj, sol_adj)
+            #     del sol_adj
 
             #--- Run su2
 
             try: # run with redirected outputs
 
-                solfil_ini = f'flo_ini{sol_ext}'
-                os.rename(solfil, solfil_ini)
+                solfil_ini = f'flo_ini{sol_ext_cfd}'
+                # solfil_ini  = f'restart_flow{sol_ext}'
+                # os.rename(solfil, solfil_ini)
 
                 su2adap.update_flow_config(config_cfd, meshfil, solfil, solfil_ini,
                                           flow_iter[iSiz], flow_cfl[iSiz], adap_sensors, mesh_size)
@@ -338,10 +353,10 @@ def mmg(config):
 
                 if gol:
 
-                    adjsolfil_ini = f'adj_ini{sol_ext}'
+                    adjsolfil_ini = f'adj_ini{sol_ext_cfd_ad}'
                     adjsolfil_ini = su2io.add_suffix(adjsolfil_ini, suffix)
-                    os.rename(adjsolfil, adjsolfil_ini)
-                    adjsolfil_ini = f'adj_ini{sol_ext}'
+                    # os.rename(adjsolfil, adjsolfil_ini)
+                    adjsolfil_ini = f'adj_ini{sol_ext_cfd_ad}'
 
                     su2adap.update_adj_config(config_cfd_ad, meshfil, solfil, adjsolfil,
                                              adjsolfil_ini, adj_iter[iSiz], mesh_size)
@@ -356,10 +371,12 @@ def mmg(config):
             except:
                 raise
 
+            del fileconverter
+
     #--- Write final files
 
-    mesh = su2adap.read_mesh_and_sol(meshfil, solfil)
-    su2adap.write_mesh_and_sol('flo.meshb', 'flo.solb', mesh)
+    fileconverter = su2adap.MeshSolConverter()
+    fileconverter.SU2ToMeditMesh(meshfil, meshfil.replace('.su2', '.mesh'))
 
     os.rename(solfil, os.path.join(base_dir, config.RESTART_FILENAME))
     os.rename(meshfil, os.path.join(base_dir, config.MESH_OUT_FILENAME))
