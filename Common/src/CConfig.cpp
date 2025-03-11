@@ -2996,22 +2996,13 @@ void CConfig::SetConfig_Options() {
   addPythonOption("ADAP_ADJ_CFL");
 
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("ADAP_BACK");
-
-  /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_RESIDUAL_REDUCTION");
 
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_HGRAD");
 
   /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("ADAP_INV_BACK");
-
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("ADAP_ORTHO");
-
-  /* DESCRIPTION: A mesh adaptation option */
-  addPythonOption("ADAP_RDG");
+  addPythonOption("ADAP_HAUSD");
 
   /* END_CONFIG_OPTIONS */
 
