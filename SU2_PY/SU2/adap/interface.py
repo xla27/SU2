@@ -218,6 +218,7 @@ class MeshSolConverter():
                         x, y, id_dom = lines[i + 2 + j].split()
                         vertices.append([float(x), float(y)])
                 elif dim == 3:
+                    for j in range(n_vert):
                         x, y, z, id_dom = lines[i + 2 + j].split()
                         vertices.append([float(x), float(y), float(z)])
                 i += n_vert  # Move index past nodes
