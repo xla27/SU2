@@ -150,10 +150,10 @@ def set_flow_config_ini(config, cur_solfil, sensor_tags, mesh_size):
     config.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'CFL_NUMBER']
     config.MATH_PROBLEM     = 'DIRECT'
     if 'GOAL' in sensor_tags:
-        config.VOLUME_OUTPUT  = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY'
+        config.VOLUME_OUTPUT  = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL'
         config.COMPUTE_METRIC = 'NO'
     else:
-        config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, METRIC'
+        config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL, METRIC'
         config.COMPUTE_METRIC  = 'YES'
         config.ADAP_COMPLEXITY = int(mesh_size)
 
@@ -164,7 +164,7 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.SOLUTION_FILENAME    = cur_solfil
     config.RESTART_FILENAME     = cur_solfil
     config.MATH_PROBLEM         = 'DISCRETE_ADJOINT'
-    config.VOLUME_OUTPUT        = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, METRIC'
+    config.VOLUME_OUTPUT        = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, RESIDUAL, METRIC'
     config.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
     config.COMPUTE_METRIC       = 'YES'
     config.ADAP_COMPLEXITY      = int(mesh_size)
