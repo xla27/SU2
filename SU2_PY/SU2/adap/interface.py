@@ -74,7 +74,8 @@ class MeshSolConverter():
     def SetSU2MeditMarkersMap(self, su2_markers_list):
         self.markers_map = []
         for medit_tag, su2_tag in enumerate(su2_markers_list):
-            self.markers_map.append([str(medit_tag), su2_tag])
+            # medit_tag starts from "1" since the tag "0" is left for the volume domain
+            self.markers_map.append([str(medit_tag+1), su2_tag])
 
     def GetSU2MeditMarkersMap(self):
         if self.markers_map:
@@ -175,11 +176,11 @@ class MeshSolConverter():
 
         try:
             with open(su2_filename, "r") as f:
-                lines = f.readlines()
+                line = f.readline()
         except:
             raise("The solution file must be in ASCII format!")
 
-        fieldnames = lines[0].lstrip('"').rstrip('"\n')
+        fieldnames = line.lstrip('"').rstrip('"\n')
         fieldnames = fieldnames.split('","')
 
         if "z" in fieldnames:
