@@ -70,16 +70,28 @@ class MeshSolConverter():
 
     def GetMetricDict(self):
         return self.metric_dict
-
-    def SetSU2Markers(self, su2_markers_list):
-        self.su2_markers_list = sorted(su2_markers_list)
-
-    def GetSU2Markers(self):
-        if self.su2_markers_list:
-            return self.su2_markers_list
-        else:
-            raise ValueError('Su2 markers list not set!')
         
+    def SetSU2MeditMarkersMap(self, su2_markers_list):
+        self.markers_map = []
+        for medit_tag, su2_tag in enumerate(su2_markers_list):
+            self.markers_map.append([str(medit_tag), su2_tag])
+
+    def GetSU2MeditMarkersMap(self):
+        if self.markers_map:
+            return self.markers_map
+        else:
+            raise ValueError('Su2-Medit markers map not set!')  
+
+    def GetSU2Marker(self, medit_tag):
+        for match in self.markers_map:
+            if match[0] == medit_tag:
+                return match[1]
+
+    def GetMeditMarker(self, su2_tag):
+        for match in self.markers_map:
+            if match[1] == su2_tag:
+                return match[0]
+
     def ReadMeshSU2(self, su2_filename):
         """ Reads a .su2 mesh file and returns node coordinates, elements, and boundary markers. """
         with open(su2_filename, "r") as f:
@@ -89,7 +101,7 @@ class MeshSolConverter():
         elements = []
         boundaries = {}
 
-        markers_su2 = []
+        su2_markers_list = []
         
         i = 0
         while i < len(lines):
@@ -127,7 +139,7 @@ class MeshSolConverter():
                 for _ in range(n_markers):
                     i += 1
                     marker_tag = lines[i].split("=")[1].strip()
-                    markers_su2.append(marker_tag)
+                    su2_markers_list.append(marker_tag)
                     i += 1
                     n_faces = int(lines[i].split("=")[1].strip())
                     boundaries[marker_tag] = []
@@ -145,14 +157,14 @@ class MeshSolConverter():
             mesh_dict['Tetrahedra'] = elements
 
         # reordering markers in alphabetical orders
-        boundaries = {key: value for key, value in sorted(boundaries.items())}
+        #boundaries = {key: value for key, value in sorted(boundaries.items())}
         if int(face_type) == 3:
             mesh_dict['Edges'] =  boundaries
         if int(face_type) == 5:
             mesh_dict['Triangles'] =  boundaries
 
         self.SetMeshDict(mesh_dict)
-        self.SetSU2Markers(markers_su2)
+        self.SetSU2MeditMarkersMap(su2_markers_list)
 
         return mesh_dict
 
@@ -277,7 +289,6 @@ class MeshSolConverter():
             boundaries = mesh['Triangles']
             face_type = 5
 
-        markers_su2 = self.GetSU2Markers()
 
         with open(su2_filename, "w") as f:
             f.write("NDIME= {}\n".format(dim))
@@ -291,10 +302,10 @@ class MeshSolConverter():
                 f.write("{}\n".format(" ".join(map(str, node))))
 
             f.write("NMARK= {}\n".format(len(boundaries)))
-            for i, faces in enumerate(boundaries.values()):
-                f.write("MARKER_TAG= {}\n".format(markers_su2[i]))
-                f.write("MARKER_ELEMS= {}\n".format(len(faces)))
-                for face in faces:
+            for medit_tag in boundaries.keys():
+                f.write("MARKER_TAG= {}\n".format(self.GetSU2Marker(medit_tag)))
+                f.write("MARKER_ELEMS= {}\n".format(len(boundaries[medit_tag])))
+                for face in boundaries[medit_tag]:
                     f.write("{} {}\n".format(face_type, " ".join(map(str, face))))
 
         return
@@ -337,10 +348,10 @@ class MeshSolConverter():
                 elif dim == 3:
                     f.write("\nTriangles \n{}\n".format(sum(len(faces) for faces in boundaries.values())))
                 
-                for marker, faces in enumerate(boundaries.values()):
-                    for face in faces:
+                for su2_tag in boundaries.keys():
+                    for face in boundaries[su2_tag]:
                         face = [fa + 1 for fa in face]
-                        f.write(" ".join(map(str, face)) + " {}\n".format(marker))
+                        f.write(" ".join(map(str, face)) + " {}\n".format(self.GetMeditMarker(su2_tag)))
 
             f.write("\nEnd\n")
         
