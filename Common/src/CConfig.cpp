@@ -6454,6 +6454,13 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }else {
     cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
   }
+    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+      if (Design_Variable[iDV] == ANGLE_OF_ATTACK) {
+        string FreeStreamSens_FileName = "flow";
+        FreeStreamSens_FileName = GetFilename(FreeStreamSens_FileName, ".meta", 0);
+        cout << "Input meta-data file name: " << FreeStreamSens_FileName << "." << endl;
+      }
+    }
   }
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
