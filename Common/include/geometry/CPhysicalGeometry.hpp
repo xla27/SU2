@@ -772,4 +772,12 @@ class CPhysicalGeometry final : public CGeometry {
    * \return A pointer to the reference node coordinate vector.
    */
   inline const su2double* GetStreamwise_Periodic_RefNode(void) const final { return Streamwise_Periodic_RefNode; }
+
+    /*!
+   * \brief Read the metadata from a native SU2 restart file (ASCII or binary).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_Metadata(CConfig *config, const string& val_filename) const;
+
 };

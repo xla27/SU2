@@ -8606,7 +8606,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     /*--- Lastly, load the AoA sensitivity from the binary metadata. ---*/
 
-    config->SetAoA_Sens(Restart_Meta[4]);
+    // config->SetAoA_Sens(Restart_Meta[4]);
 
   } else {
     filename = config->GetFilename(filename, ".csv", nTimeIter - 1);
@@ -8746,16 +8746,30 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     /*--- Read AoA sensitivity ---*/
 
-    while (getline(restart_file, text_line)) {
-      position = text_line.find("SENS_AOA=", 0);
-      if (position != string::npos) {
-        text_line.erase(0, 9);
-        AoASens = atof(text_line.c_str());
-        config->SetAoA_Sens(AoASens);
-      }
-    }
+    // while (getline(restart_file, text_line)) {
+    //   position = text_line.find("SENS_AOA=", 0);
+    //   if (position != string::npos) {
+    //     text_line.erase(0, 9);
+    //     AoASens = atof(text_line.c_str());
+    //     config->SetAoA_Sens(AoASens);
+    //   }
+    // }
 
     restart_file.close();
+  }
+
+  /*--- Read ASCII metadata for AoA sens if needed ---*/
+  for (unsigned short iDV = 0; iDV < config->GetnDV(); iDV++) {
+
+    if (config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) {
+
+      string metadata = "flow";
+      metadata = config->GetFilename(metadata, ".meta", 0);
+      Read_SU2_Restart_Metadata(config, metadata);
+
+    }
+
+    if (rank == MASTER_NODE) { cout << config->GetAoA_Sens() << endl;}
   }
 }
 
@@ -8894,6 +8908,224 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig* config) {
     }
   }
 }
+
+void CPhysicalGeometry::Read_SU2_Restart_Metadata(CConfig *config, const string& val_filename) const {
+
+  su2double AoA_ = config->GetAoA();
+  su2double AoS_ = config->GetAoS();
+  su2double BCThrust_ = config->GetInitial_BCThrust();
+  su2double dCD_dCL_ = config->GetdCD_dCL();
+  su2double dCMx_dCL_ = config->GetdCMx_dCL();
+  su2double dCMy_dCL_ = config->GetdCMy_dCL();
+  su2double dCMz_dCL_ = config->GetdCMz_dCL();
+  su2double SPPressureDrop_ = config->GetStreamwise_Periodic_PressureDrop();
+  su2double AoA_Sens_ = config->GetAoA_Sens();
+  string::size_type position;
+  unsigned long InnerIter_ = 0;
+  ifstream metadata;
+
+  /*--- Carry on with ASCII metadata reading. ---*/
+
+  metadata.open(val_filename.data(), ios::in);
+  if (metadata.fail()) {
+    if (rank == MASTER_NODE) {
+      cout << " Warning: There is no metadata file (" << val_filename.data() << ")."<< endl;
+      cout << " Computation will continue without updating metadata parameters." << endl;
+    }
+  }
+  else {
+
+    string text_line;
+
+    /*--- Space for extra info (if any) ---*/
+
+    while (getline (metadata, text_line)) {
+
+      /*--- External iteration ---*/
+
+      position = text_line.find ("ITER=",0);
+      if (position != string::npos) {
+        // TODO: 'ITER=' has 5 chars, not 9!
+        text_line.erase (0,5); InnerIter_ = atoi(text_line.c_str());
+      }
+
+      /*--- Angle of attack ---*/
+
+      position = text_line.find ("AOA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+      }
+
+      /*--- Sideslip angle ---*/
+
+      position = text_line.find ("SIDESLIP_ANGLE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+      }
+
+      /*--- BCThrust angle ---*/
+
+      position = text_line.find ("INITIAL_BCTHRUST=",0);
+      if (position != string::npos) {
+        text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+      }
+
+      /*--- dCD_dCL coefficient ---*/
+
+      position = text_line.find ("DCD_DCL_VALUE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+      }
+
+      /*--- dCMx_dCL coefficient ---*/
+
+      position = text_line.find ("DCMX_DCL_VALUE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); dCMx_dCL_ = atof(text_line.c_str());
+      }
+
+      /*--- dCMy_dCL coefficient ---*/
+
+      position = text_line.find ("DCMY_DCL_VALUE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); dCMy_dCL_ = atof(text_line.c_str());
+      }
+
+      /*--- dCMz_dCL coefficient ---*/
+
+      position = text_line.find ("DCMZ_DCL_VALUE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); dCMz_dCL_ = atof(text_line.c_str());
+      }
+
+      /*--- Streamwise periodic pressure drop for prescribed massflow cases. ---*/
+
+      position = text_line.find ("STREAMWISE_PERIODIC_PRESSURE_DROP=",0);
+      if (position != string::npos) {
+        // Erase the name from the line, 'STREAMWISE_PERIODIC_PRESSURE_DROP=' has 34 chars.
+        text_line.erase (0,34); SPPressureDrop_ = atof(text_line.c_str());
+      }
+
+      /*--- AoA sensitivity. ---*/
+
+      position = text_line.find ("SENS_ALPHA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,11); AoA_Sens_ = atof(text_line.c_str());
+      }
+
+    }
+
+    /*--- Close the restart meta file. ---*/
+
+    metadata.close();
+
+  }
+
+
+  /*--- Load the metadata. ---*/
+
+  /*--- Angle of attack ---*/
+
+  if (!config->GetDiscard_InFiles()) {
+    if ((config->GetAoA() != AoA_) && (rank == MASTER_NODE)) {
+      cout.precision(6);
+      cout <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+      cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+    }
+    config->SetAoA(AoA_ + config->GetAoA_Offset());
+  }
+
+  else {
+    if ((config->GetAoA() != AoA_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+  }
+
+  /*--- Sideslip angle ---*/
+
+  if (!config->GetDiscard_InFiles()) {
+    if ((config->GetAoS() != AoS_) && (rank == MASTER_NODE)) {
+      cout.precision(6);
+      cout <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+      cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+    }
+    config->SetAoS(AoS_ + config->GetAoS_Offset());
+  }
+  else {
+    if ((config->GetAoS() != AoS_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+  }
+
+  /*--- BCThrust ---*/
+
+  if (!config->GetDiscard_InFiles()) {
+    if ((config->GetInitial_BCThrust() != BCThrust_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+    config->SetInitial_BCThrust(BCThrust_);
+  }
+  else {
+    if ((config->GetInitial_BCThrust() != BCThrust_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+  }
+
+
+  if (!config->GetDiscard_InFiles()) {
+
+    if ((config->GetdCD_dCL() != dCD_dCL_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
+    config->SetdCD_dCL(dCD_dCL_);
+
+    if ((config->GetdCMx_dCL() != dCMx_dCL_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the dCMx/dCL provided in the direct solution file: " << dCMx_dCL_ << "." << endl;
+    config->SetdCMx_dCL(dCMx_dCL_);
+
+    if ((config->GetdCMy_dCL() != dCMy_dCL_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the dCMy/dCL provided in the direct solution file: " << dCMy_dCL_ << "." << endl;
+    config->SetdCMy_dCL(dCMy_dCL_);
+
+    if ((config->GetdCMz_dCL() != dCMz_dCL_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the dCMz/dCL provided in the direct solution file: " << dCMz_dCL_ << "." << endl;
+    config->SetdCMz_dCL(dCMz_dCL_);
+
+  }
+
+  else {
+
+    if ((config->GetdCD_dCL() != dCD_dCL_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the dCD/dCL in the direct solution file." << endl;
+
+    if ((config->GetdCMx_dCL() != dCMx_dCL_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the dCMx/dCL in the direct solution file." << endl;
+
+    if ((config->GetdCMy_dCL() != dCMy_dCL_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the dCMy/dCL in the direct solution file." << endl;
+
+    if ((config->GetdCMz_dCL() != dCMz_dCL_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the dCMz/dCL in the direct solution file." << endl;
+
+  }
+
+  if (!config->GetDiscard_InFiles()) {
+    if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the STREAMWISE_PERIODIC_PRESSURE_DROP provided in the direct solution file: " << std::setprecision(16) << SPPressureDrop_ << endl;
+    config->SetStreamwise_Periodic_PressureDrop(SPPressureDrop_);
+  }
+  else {
+    if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the STREAMWISE_PERIODIC_PRESSURE_DROP in the direct solution file." << endl;
+  }
+
+  if (!config->GetDiscard_InFiles()) {
+    if ((config->GetAoA_Sens() != AoA_Sens_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the SENS_ALPHA provided in the direct solution file: " << std::setprecision(16) << AoA_Sens_ << endl;
+    config->SetAoA_Sens(AoA_Sens_);
+  }
+  else {
+    if ((config->GetAoA_Sens() != AoA_Sens_) && (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the SENS_ALPHA in the direct solution file." << endl;
+  }
+
+}
+
 
 void CPhysicalGeometry::Check_Periodicity(CConfig* config) {
   /*--- Check for the presence of any periodic BCs and disable multigrid
