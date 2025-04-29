@@ -365,3 +365,52 @@ void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolve
   }
 
 }
+
+void CAdjFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
+
+  if (config->GetAoAasDV()){
+    WriteMetaData(config);
+  }
+
+}
+
+void CAdjFlowOutput::WriteMetaData(const CConfig *config){
+
+  ofstream meta_file;
+
+  string filename = "flow";
+
+  filename = config->GetFilename(filename, ".meta", curTimeIter);
+
+  /*--- All processors open the file. ---*/
+
+  if (rank == MASTER_NODE) {
+    cout << "Writing Flow Meta-Data file: " << filename << endl;
+
+    meta_file.open(filename.c_str(), ios::out);
+    meta_file.precision(15);
+
+    if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST || config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
+      meta_file <<"ITER= " << curTimeIter + 1 << endl;
+    else
+      meta_file <<"ITER= " << curInnerIter + config->GetExtIter_OffSet() + 1 << endl;
+
+    if (config->GetAoAasDV()){
+      meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+    }
+    meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+
+
+    if (( config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_EULER ||
+          config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
+          config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS )) {
+      meta_file << "SENS_ALPHA=" << config->GetAoA_Sens() * PI_NUMBER / 180.0 << endl;
+    }
+
+    if(config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      meta_file << "STREAMWISE_PERIODIC_PRESSURE_DROP=" << GetHistoryFieldValue("STREAMWISE_DP") << endl;
+    }
+  }
+
+  meta_file.close();
+}
