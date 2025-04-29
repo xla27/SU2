@@ -9010,7 +9010,7 @@ void CPhysicalGeometry::Read_SU2_Restart_Metadata(CConfig *config, const string&
 
       position = text_line.find ("SENS_ALPHA=",0);
       if (position != string::npos) {
-        text_line.erase (0,11); AoA_Sens_ = atof(text_line.c_str());
+        text_line.erase (0,11); AoA_Sens_ = atof(text_line.c_str()) * 180.0 / PI_NUMBER;
       }
 
     }
