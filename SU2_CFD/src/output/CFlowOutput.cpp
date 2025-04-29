@@ -2344,7 +2344,8 @@ void CFlowOutput::SetNearfieldInverseDesign(CSolver *solver, const CGeometry *ge
 void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){
 
   if (config->GetFixed_CL_Mode() ||
-      (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)){
+      (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) ||
+      (config->GetAoAasDV())){
     WriteMetaData(config);
   }
 
@@ -2385,13 +2386,16 @@ void CFlowOutput::WriteMetaData(const CConfig *config){
       }
       meta_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
     }
+    else if (config->GetAoAasDV()){
+      meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+    }
     meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
 
 
     if (( config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_EULER ||
           config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES ||
           config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS )) {
-      meta_file << "SENS_AOA=" << GetHistoryFieldValue("SENS_AOA") * PI_NUMBER / 180.0 << endl;
+      meta_file << "SENS_ALPHA=" << config->GetAoA_Sens() * PI_NUMBER / 180.0 << endl;
     }
 
     if(config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
