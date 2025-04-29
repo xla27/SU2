@@ -449,6 +449,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
+  config->SetAoA_Sens(Total_Sens_AoA);
 
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
