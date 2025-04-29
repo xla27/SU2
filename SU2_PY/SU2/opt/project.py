@@ -303,6 +303,7 @@ class Project(object):
         else:
             design = self.init_design(konfig, closest)
         #: if new design
+        update_meta(design)
         return design
 
     def get_design(self, config):
@@ -524,3 +525,53 @@ class Project(object):
     def __str__(self):
         output = self.__repr__()
         return output
+
+
+def update_meta(design):
+    """
+    Function to update .meta file if ANGLE_OF_ATTACK is a design variable.
+    """
+
+    design_folder = design.folder
+
+    if design_folder == 'DESIGNS/DSN_001':
+        return
+    
+    else:
+        config = design.config
+        meta_filename = design.files.FLOW_META
+
+        AoA_DV = False
+        for dv_kind in config.DEFINITION_DV["KIND"]:
+            if dv_kind == 'ANGLE_OF_ATTACK':
+                AoA_DV = True
+
+        if AoA_DV:
+
+            delta_AoA = config.DV_VALUE_NEW[0]
+            AoA_old = float(config.AOA)
+                    
+            with open(os.path.join(design_folder, meta_filename)) as f:
+
+                new_file = open(os.path.join(design_folder, meta_filename.replace('.meta', '_2.meta')), 'w')
+
+                for line in f:
+                    if line.startswith('AOA= '):
+                        #AoA_old = float(line.split('=')[1])
+                        new_file.write('AOA= %1.10f \n' % (AoA_old + delta_AoA))
+                    else:
+                        new_file.write(line)
+                new_file.close()
+
+            os.remove(os.path.join(design_folder, meta_filename))
+            os.rename(os.path.join(design_folder, meta_filename.replace('.meta', '_2.meta')),
+                      os.path.join(design_folder, meta_filename))
+            return
+            
+        else:
+            return
+
+
+
+
+    
