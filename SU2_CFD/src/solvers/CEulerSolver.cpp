@@ -104,6 +104,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
   }
+  else if (config->GetAoAasDV()) {
+    /*--- Read and store the restart metadata. ---*/
+
+    string filename_ = "flow";
+    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
+    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
+  }
 
   /*--- Set the gamma value ---*/
 
