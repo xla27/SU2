@@ -4956,6 +4956,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nDV = 1;
     Design_Variable = new unsigned short [nDV];
     Design_Variable[0] = NO_DEFORMATION;
+    AoA_as_DV = false;
+  }
+  else {
+    AoA_as_DV = false;
+    for (int iDV = 0; iDV < GetnDV(); iDV++) {
+      if (GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) {
+        AoA_as_DV = true;
+      }
+    }
   }
 
   /*--- Checks for incompressible flow problems. ---*/

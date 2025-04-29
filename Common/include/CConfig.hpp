@@ -488,6 +488,7 @@ private:
   *MG_PostSmooth,                     /*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;                   /*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
+  bool AoA_as_DV;                       /*!< \brief Flag for AoA as design variable. */
 
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
@@ -6242,6 +6243,12 @@ public:
    * \return Design variable identification.
    */
   unsigned short GetDesign_Variable(unsigned short val_dv) const { return Design_Variable[val_dv]; }
+
+  /*!
+   * \brief Get information about ANGLE_OF_ATTACK as design variables.
+   * \return <code>TRUE</code> if ANGLE_OF_ATTACK is a design variable; otherwise <code>FALSE</code>.
+   */
+  bool GetAoAasDV(void) const { return AoA_as_DV; }
 
   /*!
    * \brief Get the buffet sensor sharpness coefficient.
