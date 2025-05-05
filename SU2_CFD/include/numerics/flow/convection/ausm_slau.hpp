@@ -165,6 +165,36 @@ public:
 };
 
 /*!
+ * \class CUpwAUSMPLUSM_Flow
+ * \brief Class for solving an approximate Riemann AUSM+ M.
+ * \ingroup ConvDiscr
+ * \author A. Perlini
+ */
+class CUpwAUSMPLUSM_Flow final : public CUpwAUSMPLUS_SLAU_Base_Flow {
+  private:
+    su2double beta;
+  
+    /*!
+     * \brief Mass flux and pressure for the AUSM+M scheme.
+     * \param[in] config - Definition of the particular problem.
+     * \param[out] mdot - The mass flux.
+     * \param[out] pressure - The pressure at the control volume face.
+     */
+    void ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure) override;
+  
+  public:
+  
+    /*!
+     * \brief Constructor of the class.
+     * \param[in] val_nDim - Number of dimensions of the problem.
+     * \param[in] val_nVar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CUpwAUSMPLUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+  
+  };
+
+/*!
  * \class CUpwSLAU_Flow
  * \brief Class for solving the Low-Dissipation AUSM.
  * \ingroup ConvDiscr

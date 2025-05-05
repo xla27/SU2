@@ -1627,6 +1627,11 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     }
   }
 
+  // AGGIUNGERE
+  /*--- Set Pressure diffusion sensor ---*/
+  if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+  SetPressureDiffusionSensor(geometry, config);
+
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
@@ -1970,6 +1975,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         numerics->SetCoord(Coord_i, Coord_j);
       }
     }
+    // AGGIUNGERE QUA 
+    if (config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+    numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
 
     /*--- Compute the residual ---*/
 
@@ -4994,6 +5002,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                   geometry->nodes->GetGridVel(iPoint));
       }
 
+      // AGGIUNGERE
+      if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+        conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
+
       /*--- Compute the convective residual using an upwind scheme ---*/
 
       auto residual = conv_numerics->ComputeResidual(config);
@@ -7337,6 +7349,10 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+      
+      // AGGIUNGERE
+      // if(config->GetKind_Upwind_Flow() == UPWIND::AUSMPLUSM)
+      // conv_numerics->SetSensor (nodes->GetSensor(iPoint), nodes->GetSensor(iPoint));
 
       /*--- Compute the residual using an upwind scheme ---*/
 
@@ -10068,5 +10084,26 @@ void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geom
         weights[1][jDim+1] -= dmudT*g/(r*Pr) * u[jDim] * gradT[iDim] * dUbar;
     weights[1][0] += dmudT*g/(r*Pr) * (0.5*u2-cv*T) * gradT[iDim] * dUbar;
   }
+
+}
+
+void CEulerSolver::SetPressureDiffusionSensor(CGeometry *geometry, CConfig *config) {
+
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+
+    su2double Sensor = 1.0;
+
+    for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+      const su2double P_k = nodes->GetPressure(jPoint) / nodes->GetPressure(iPoint);
+      Sensor = min(Sensor, min(P_k, 1.0/P_k));
+    }
+
+    nodes->SetSensor(iPoint,Sensor);
+  }
+
+  /*--- MPI parallelization ---*/
+
+  InitiateComms(geometry, config, SENSOR);
+  CompleteComms(geometry, config, SENSOR);
 
 }

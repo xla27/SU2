@@ -701,6 +701,113 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(const CConfig* config, s
 
 }
 
+CUpwAUSMPLUSM_Flow::CUpwAUSMPLUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                     CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
+
+  HasAnalyticalDerivatives = false;
+  Minf = config->GetMach();
+  beta = 1.0/8.0;
+
+  if (Minf < EPS)
+    SU2_MPI::Error("AUSM+M requires a reference Mach number (\"MACH_NUMBER\") greater than 0.", CURRENT_FUNCTION);
+}
+
+void CUpwAUSMPLUSM_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2double &mdot, su2double &pressure) {
+
+  /*--- Projected velocities ---*/
+
+  su2double ProjVelocity_i = 0.0, ProjVelocity_j = 0.0;
+
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+    ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
+  }
+
+  /*--- Compute interface speed of sound (aF) ---*/
+  su2double Enthalpy_norm = 0.5 * (Enthalpy_i + Enthalpy_j);
+  su2double as = sqrt(2.0 * Enthalpy_norm * (Gamma - 1.0) / (Gamma + 1.0));
+
+  su2double aF;
+  if (0.5 * (ProjVelocity_i + ProjVelocity_j) >= 0.0)
+    aF = as * as / max(fabs(ProjVelocity_i), as);
+  else
+    aF = as * as / max(fabs(ProjVelocity_j), as);
+
+  /*--- Left and right pressures and Mach numbers ---*/
+
+  su2double mLP, betaLP, mRM, betaRM;
+
+  su2double mL = ProjVelocity_i/aF;
+  su2double mR = ProjVelocity_j/aF;
+
+  su2double dF = 0.5 * (Density_i + Density_j);
+  su2double MFsq = 0.5*(mL*mL+mR*mR);
+  su2double param1 = max(MFsq, Minf*Minf);
+  su2double Mrefsq = min(1.0, param1);
+
+  su2double fa = 2.0*sqrt(Mrefsq)-Mrefsq;
+
+  su2double alpha = 3.0/16.0*(-4.0+5.0*fa*fa);
+  su2double f = 0.5 * (1 - cos(PI_NUMBER * min(1.0, max(abs(mL), abs(mR)))));
+
+  /*--- Pressure sensor terms ---*/
+  su2double h = min(Sensor_i, Sensor_j);
+  su2double g = 0.5 * (1 + cos(PI_NUMBER * h));
+  su2double f0 = min(1.0, max(f, Minf * Minf));
+
+  if (fabs(mL) <= 1.0) {
+    su2double p1 = 0.25*(mL+1.0)*(mL+1.0);
+    su2double p2 = (mL*mL-1.0)*(mL*mL-1.0);
+
+    mLP = p1 + beta*p2;
+    betaLP = p1*(2.0-mL) + alpha*mL*p2;
+  }
+  else {
+    mLP = 0.5*(mL+fabs(mL));
+    betaLP = mLP/mL;
+  }
+
+  if (fabs(mR) <= 1.0) {
+    su2double p1 = 0.25*(mR-1.0)*(mR-1.0);
+    su2double p2 = (mR*mR-1.0)*(mR*mR-1.0);
+
+    mRM = -p1 - beta*p2;
+    betaRM = p1*(2.0+mR) - alpha*mR*p2;
+  }
+  else {
+    mRM = 0.5*(mR-fabs(mR));
+    betaRM = mRM/mR;
+  }
+
+  /*--- Pressure and velocity diffusion terms ---*/
+
+  su2double rhoF = 0.5*(Density_i+Density_j);
+  su2double Mp = -0.5 * (1.0 - f) * (Pressure_j - Pressure_i) / (rhoF * aF * aF) * (1.0 - g);
+
+  /*--- Compute and add pressure sensor term to pressure flux ---*/
+  const su2double pFi = f0 * (betaLP + betaRM - 1.0) * 0.5 * (Pressure_i + Pressure_j);
+
+  /*--- Velocity diffusion term---*/
+  su2double sq_veli = GeometryToolbox::SquaredNorm(nDim, Velocity_i);
+  su2double sq_velj = GeometryToolbox::SquaredNorm(nDim, Velocity_j);
+
+  su2double Pu = -g * Gamma * 0.5 * (Pressure_i + Pressure_j) / aF * betaLP * betaRM * (sqrt(sq_veli) - sqrt(sq_velj));
+
+
+  /*--- Finally the fluxes ---*/
+
+  su2double mF = mLP + mRM + Mp;
+  mdot = aF * (max(mF,0.0)*Density_i + min(mF,0.0)*Density_j);
+
+  pressure = (0.5 * (Pressure_j + Pressure_i) + 0.5 * (betaLP - betaRM) * (Pressure_i - Pressure_j) + pFi) + Pu;
+
+  if (!implicit || !UseAccurateJacobian) return;
+  else {
+    SU2_MPI::Error("AUSM+M is not implemented for implicit timestepping", CURRENT_FUNCTION);
+  }
+
+}
+
 CUpwSLAU_Flow::CUpwSLAU_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config, bool val_low_dissipation) :
                CUpwAUSMPLUS_SLAU_Base_Flow(val_nDim, val_nVar, config) {
 

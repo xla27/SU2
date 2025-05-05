@@ -1723,6 +1723,14 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
               }
               break;
 
+            // AGGIUNGERE
+            case UPWIND::AUSMPLUSM:
+            for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+              numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSMPLUSM_Flow(nDim, nVar_Flow, config);
+              numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwAUSMPLUSM_Flow(nDim, nVar_Flow, config);
+            }
+            break;
+
             case UPWIND::TURKEL:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwTurkel_Flow(nDim, nVar_Flow, config);

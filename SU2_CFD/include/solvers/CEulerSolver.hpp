@@ -1674,4 +1674,11 @@ public:
   void LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
                              unsigned long iPoint, vector<vector<double> > &weights);
 
+  /*!
+   * \brief Compute the Pressure sensor for AUSM+M scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPressureDiffusionSensor(CGeometry *geometry, CConfig *config);
+
 };
