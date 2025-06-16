@@ -180,9 +180,9 @@ def mmg(config):
             os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), solfil)
 
         #--- Set RESTART_SOL=YES for runs after adaptation
-        #if not nemo:
-            #config_cfd.RESTART_SOL = 'YES' WE NEED AN INTERPOLATOR!!!
-            #config_cfd.RESTART_CFL = 'YES'
+        if not nemo:
+            config_cfd.RESTART_SOL = 'YES' 
+            config_cfd.RESTART_CFL = 'YES'
 
         if gol:
             adjsolfil = f'restart_adj{sol_ext_cfd_ad}'
@@ -218,8 +218,8 @@ def mmg(config):
             suffix         = su2io.get_adjointSuffix(func_name)
             adjsolfil = su2io.add_suffix(adjsolfil, suffix)
 
-            #--- Set RESTART_SOL=YES for runs after adaptation  WE NEED AN INTERPOLATOR!!!
-            #config_cfd_ad.RESTART_SOL = 'YES'    
+            #--- Set RESTART_SOL=YES for runs after adaptation  
+            config_cfd_ad.RESTART_SOL = 'YES'    
 
     except:
         raise
