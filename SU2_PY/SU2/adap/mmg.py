@@ -161,13 +161,17 @@ def mmg(config):
             config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
 
     if gol:
-        sol_ext_cfd = '.dat'
-        config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
-        sol_ext_cfd_ad = '.csv'
-        config_cfd_ad.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+        if '.csv' in config.RESTART_FILENAME:
+            sol_ext_cfd = '.csv'
+            config_cfd.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+            sol_ext_cfd_ad = '.csv'
+            config_cfd_ad.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']   
+        else:
+            sol_ext_cfd = '.dat'
+            config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
+            sol_ext_cfd_ad = '.dat'
+            config_cfd_ad.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
 
-
-    meshfil = config['MESH_FILENAME']
     solfil  = f'restart_flow{sol_ext_cfd}'
     su2adap.set_flow_config_ini(config_cfd, solfil, adap_sensors, mesh_sizes[0])
 
@@ -197,10 +201,9 @@ def mmg(config):
                 adjsolfil_ini = config_cfd_ad.SOLUTION_ADJ_FILENAME
                 func_name          = config.OBJECTIVE_FUNCTION
                 suffix             = su2io.get_adjointSuffix(func_name)
-                adjsolfil_ini = su2io.add_suffix(adjsolfil_ini, suffix)
 
                 #--- Run an adjoint if the solution file doesn't exist
-                if not (os.path.exists(os.path.join(base_dir, adjsolfil_ini))):
+                if not (os.path.exists(os.path.join(base_dir, su2io.add_suffix(adjsolfil_ini, suffix)))):
                     config_cfd_ad.ITER        = config.ITER
                     config_cfd_ad.RESTART_SOL = 'NO'
 
@@ -217,13 +220,6 @@ def mmg(config):
                 print('Running initial adjoint CFD solution.')
 
             with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd_ad)
-
-            func_name      = config.OBJECTIVE_FUNCTION
-            suffix         = su2io.get_adjointSuffix(func_name)
-            adjsolfil = su2io.add_suffix(adjsolfil, suffix)
-
-            #--- Set RESTART_SOL=YES for runs after adaptation  
-            config_cfd_ad.RESTART_SOL = 'YES'    
 
     except:
         raise
@@ -257,6 +253,10 @@ def mmg(config):
 
             global_iter += 1
 
+            mesh_size = int(mesh_sizes[iSiz])
+            if iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
+            config_mmg['size'] = mesh_size
+
             #--- Instantiating the mesh converter
             fileconverter = su2adap.MeshSolConverter()
 
@@ -269,44 +269,20 @@ def mmg(config):
             fileconverter.SU2ToMeditSol(solfil, 
                                         solfil.replace(sol_ext_cfd, '.sol'))
 
-            mesh_size = int(mesh_sizes[iSiz])
-            if iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
-            config_mmg['size'] = mesh_size
-
-            # if gol:
-
-            #     #--- Read and merge adjoint solution to be interpolated
-
-            #     fileconverter.SU2ToMeditSol(adjsolfil, adjsolfil.replace('.csv', '.sol'))
-
             #--- Writing (if necessary) the parameter file for Hausdorff distances
             fileconverter.WriteParamFile(config_mmg, meshfil.rstrip('.su2'))
 
             #--- Adapt mesh with MMG
             meshin = config_cfd['MESH_FILENAME'].replace('.su2','.mesh')
-            meshout = config_cfd['MESH_FILENAME'].replace('.su2','_adap.mesh')
-            if gol:
-                adjsolfile = config_cfd_ad['RESTART_ADJ_FILENAME'].replace('.dat','.sol')
-                solfile = config_cfd['RESTART_FILENAME'].replace(sol_ext_cfd,'.sol')
-                su2adap.call_mmg(meshin, meshout, solfile, config_mmg)
-            else:
-                solfile = config_cfd['RESTART_FILENAME'].replace(sol_ext_cfd,'.sol')
-                su2adap.call_mmg(meshin, meshout, solfile, config_mmg)
+            meshout = config_cfd['MESH_OUT_FILENAME'].replace('.su2','.mesh')
+
+            solfile = config_cfd['RESTART_FILENAME'].replace(sol_ext_cfd,'.sol')
+            su2adap.call_mmg(meshin, meshout, solfile, config_mmg)
 
             mesh_new = fileconverter.ReadMeshMedit(meshout)
 
             #--- Dumping a copy of the adapted mesh 
             fileconverter.WriteMeshSU2(meshout.replace('.mesh','.su2'))
-
-            #--- Reading the new output mesh
-
-            # extra_files=['']
-            # for file in extra_files:
-            #     try:
-            #         os.remove(file)
-            #     except OSError:
-            #         pass
-
 
             #--- Print mesh sizes
             su2adap.print_adap_table(iSiz, mesh_sizes, iSub, nSub, mesh_new)
@@ -320,21 +296,7 @@ def mmg(config):
 
             fileconverter.WriteMeshSU2(meshfil)
 
-            # if gol:
-            #     adjsolfil = f'adj{sol_ext}'
-            #     sol_adj = su2adap.split_adj_sol(mesh_new)
-            #     su2adap.write_sol(adjsolfil, sol_adj)
-
-            # meshfil_gmf    = 'flo_itp.meshb'
-            # solfil_gmf     = 'flo_itp.solb'
-            # su2adap.write_mesh_and_sol(meshfil_gmf, solfil_gmf, mesh_new)
-
             del mesh_new
-
-            # if gol:
-            #     solfil_gmf_adj = 'adj_itp.solb'
-            #     su2adap.write_sol(solfil_gmf_adj, sol_adj)
-            #     del sol_adj
 
             #--- Run su2
 
@@ -343,10 +305,6 @@ def mmg(config):
                 os.symlink(os.path.join(f'../ite{global_iter-1}', config.RESTART_FILENAME), solfil_ini)
 
             try: # run with redirected outputs
-
-                # solfil_ini = f'flo_ini{sol_ext_cfd}'
-                # solfil_ini  = f'restart_flow{sol_ext_cfd}'
-                # os.rename(solfil, solfil_ini)
 
                 su2adap.update_flow_config(config_cfd, meshfil, solfil, solfil_ini,
                                           flow_iter[iSiz], flow_cfl[iSiz], adap_sensors, mesh_size)
@@ -363,19 +321,12 @@ def mmg(config):
 
                 if gol:
 
-                    adjsolfil_ini = f'adj_ini{sol_ext_cfd_ad}'
-                    adjsolfil_ini = su2io.add_suffix(adjsolfil_ini, suffix)
-                    # os.rename(adjsolfil, adjsolfil_ini)
-                    adjsolfil_ini = f'adj_ini{sol_ext_cfd_ad}'
-
                     su2adap.update_adj_config(config_cfd_ad, meshfil, solfil, adjsolfil,
                                              adjsolfil_ini, adj_iter[iSiz], mesh_size)
 
                     with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd_ad)
 
-                    adjsolfil = su2io.add_suffix(adjsolfil, suffix)
-
-                    if not os.path.exists(adjsolfil) :
+                    if not os.path.exists(su2io.add_suffix(adjsolfil, suffix)) :
                         raise RuntimeError('SU2_CFD_AD failed.\n')
 
             except:
