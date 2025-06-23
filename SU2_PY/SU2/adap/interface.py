@@ -45,7 +45,7 @@ command_mmg3D = 'mmg3d_O3'
 class MeshSolConverter():
     """
     Class to convert .su2 to .mesh files and viceversa.
-    Class to convert .csv Su2 solution files to .sol
+    Class to convert .csv or .dat SS2 solution files to .sol
     Works only with 2D-triangular and 3D-tetrahedral unstructured meshes.
     """
 
@@ -54,47 +54,79 @@ class MeshSolConverter():
         return
     
     def SetDim(self, dim):
+        """
+        Setting the number of dimensions.
+        """
         self.dim = dim
 
     def GetDim(self):
+        """
+        Returning the number of dimensions.
+        """
         return self.dim
     
     def SetMeshDict(self, mesh_dict):
+        """
+        Setting the mesh dictionary once read either from .su2 or .mesh
+        """
         self.mesh_dict = mesh_dict
 
     def GetMeshDict(self):
+        """
+        Returning the mesh dictionary.
+        """
         return self.mesh_dict
     
     def SetMetricDict(self, metric_dict):
+        """
+        Setting the dictionary for adaptation metric values.
+        """
         self.metric_dict = metric_dict
 
     def GetMetricDict(self):
+        """
+        Returning the dictionary for adaptation metric values.
+        """
         return self.metric_dict
         
     def SetSU2MeditMarkersMap(self, su2_markers_list):
+        """
+        Constructing a unique between SU2 markers and Medit colors.
+        """
         self.markers_map = []
         for medit_tag, su2_tag in enumerate(su2_markers_list):
             # medit_tag starts from "1" since the tag "0" is left for the volume domain
             self.markers_map.append([str(medit_tag+1), su2_tag])
 
     def GetSU2MeditMarkersMap(self):
+        """
+        Returning the map bewteen SU2 markers and Medit colors.
+        """
         if self.markers_map:
             return self.markers_map
         else:
             raise ValueError('Su2-Medit markers map not set!')  
 
     def GetSU2Marker(self, medit_tag):
+        """
+        Returning the SU2 markers correspondent to a Medit color.
+        """
         for match in self.markers_map:
             if match[0] == medit_tag:
                 return match[1]
 
     def GetMeditMarker(self, su2_tag):
+        """
+        Returning the Medit color correspondent to a SU2 marker.
+        """
         for match in self.markers_map:
             if match[1] == su2_tag:
                 return match[0]
 
     def ReadMeshSU2(self, su2_filename):
-        """ Reads a .su2 mesh file and returns node coordinates, elements, and boundary markers. """
+        """ 
+        Reads a .su2 mesh file and returns node coordinates, elements, and boundary markers in a dictionary data structure. 
+        """
         with open(su2_filename, "r") as f:
             lines = f.readlines()
 
@@ -170,8 +202,9 @@ class MeshSolConverter():
         return mesh_dict
 
     def ReadSolSU2(self, su2_filename):
-        """ Reads a .csv sol file to obtain the metric. """
-
+        """
+        Reads a .csv/.dat SU2 solution file to obtain the metric. 
+        """
         metric_dict = {}
 
         if '.dat' in su2_filename:
@@ -205,7 +238,9 @@ class MeshSolConverter():
         return metric_dict
     
     def ReadMeshMedit(self, medit_filename):
-        """ Reads a .mesh file and returns node coordinates, elements, and boundary markers. """
+        """ 
+        Reads a .mesh file and returns node coordinates, elements, and boundary markers  in a dictionary data structure. 
+        """
         with open(medit_filename, "r") as f:
             lines = f.readlines()
 
@@ -273,7 +308,9 @@ class MeshSolConverter():
         return mesh_dict
 
     def WriteMeshSU2(self, su2_filename):
-        """ Writes a .su2 file from given mesh data. """
+        """ 
+        Writes a .su2 mesh file from given mesh data. 
+        """
         mesh = self.GetMeshDict()
         dim = mesh['Dim']
         vertices = mesh["Vertices"]
@@ -310,7 +347,9 @@ class MeshSolConverter():
         return
     
     def WriteMeshMedit(self, medit_filename):
-        """ Writes a .mesh file from given mesh data. """
+        """ 
+        Writes a .mesh mesh file from given mesh data. 
+        """
         mesh = self.GetMeshDict()
         dim = mesh['Dim']
         vertices = mesh['Vertices']
@@ -357,7 +396,9 @@ class MeshSolConverter():
         return
 
     def WriteSolMedit(self, medit_filename):
-        """ Writes a .sol file from given metric data. """
+        """ 
+        Writes a .sol Medit file from given metric data. 
+        """
         metric = self.GetMetricDict()
 
         dim = metric['Dim']
@@ -394,23 +435,72 @@ class MeshSolConverter():
         return
     
     def SU2ToMeditMesh(self, su2_filename, medit_filename):
+        """
+        Full mesh file conversion (reading-writing) from SU2 to Medit
+        """
         self.ReadMeshSU2(su2_filename)
         self.WriteMeshMedit(medit_filename)
         if self.verbose:
             print(f"Converted {su2_filename} to {medit_filename}")
 
     def SU2ToMeditSol(self, su2_filename, medit_filename):
+        """
+        Full sol file conversion (reading-writing) from SU2 to Medit
+        """
         self.ReadSolSU2(su2_filename)
         self.WriteSolMedit(medit_filename)
         if self.verbose:
             print(f"Converted {su2_filename} to {medit_filename}")
 
     def MeditToSU2Mesh(self, medit_filename, su2_filename):
+        """
+        Full mesh file conversion (reading-writing) from Medit to SU2
+        """
         self.ReadMeshMedit(medit_filename)
         self.WriteMeshSU2(su2_filename)
         if self.verbose:
             print(f"Converted {medit_filename} to {su2_filename}")
 
+    def WriteParamFile(self, config_mmg, mesh_filename):
+        """
+        Writing the .mmg2d/.mmg3d parameter file if required. 
+        """
+        param_required = isinstance(config_mmg['hausd'], dict)
+        if param_required:
+            mesh = self.GetMeshDict()
+            dim = mesh['Dim']
+            if dim == 2:
+                boundaries = mesh['Edges']
+                elem_type = 'Edges'
+                mmg_ext = '.mmg2d'
+            if dim == 3:
+                boundaries = mesh['Triangles']
+                elem_type = 'Triangles'
+                mmg_ext = '.mmg3d'
+
+            param_filename = mesh_filename + mmg_ext
+            with open(param_filename, 'w') as f:
+                f.write('Parameters\n')
+                f.write(str(len(boundaries.keys()))+'\n')
+                f.write('\n')
+
+                if len(boundaries.keys()) != len(config_mmg['hausd'].keys()):
+                    print('WARNING: Different number of markers between SU2 (%i) mesh and MMG parameters (%i). ' \
+                                  'For unspecified markers, HAUSD = 0.01 is assumed.' %
+                                   (len(boundaries.keys()), len(config_mmg['hausd'].keys())))
+                
+                for su2_tag in config_mmg['hausd'].keys():
+                    f.write('%s %s %1.2e %1.2e %1.2e\n' % 
+                            (self.GetMeditMarker(su2_tag), 
+                            elem_type, 
+                            config_mmg['hmin'], 
+                            config_mmg['hmax'], 
+                            config_mmg['hausd'][su2_tag]))       
+        
+        else:
+            pass
+
+        return      
 
 def call_mmg(meshin, meshout, solfile, config_mmg):
     """Adapt mesh using pyamg module"""
@@ -451,7 +541,7 @@ def build_command(command_mmg, options):
     the_Command += ' -hmax '  + str(options['hmax'])
     if 'hgrad' in options.keys():
         the_Command += ' -hgrad ' + str(options['hgrad'])
-    if 'hausd' in options.keys():
+    if 'hausd' in options.keys() and not isinstance(options['hausd'], dict):
         the_Command += ' -hausd ' + str(options['hausd'])
     the_Command += ' > ' + options['mmg_log']
     
@@ -473,6 +563,7 @@ def run_command(Command):
 
     return 
 
+
 CGNS_STRING_SIZE = 33  # Fixed string size per CGNS standard
 
 def read_SU2_restart_binary(filename):
@@ -481,7 +572,7 @@ def read_SU2_restart_binary(filename):
 
     Returns:
         fields (List[str]): Field names including "Point_ID".
-        data (np.ndarray): Data array of shape (nPoints, nFields).
+        data (np.ndarray): Data array of shape (nPoints, nFields-1).
 
     Note that the Point_ID column is implicit in the ordering
     """
