@@ -152,10 +152,16 @@ def mmg(config):
     else:
         print('\nRunning initial CFD solution.')
 
-    #--- Only allow ASCII restarts for file conversion
+    #--- Only allow ASCII restarts for file conversion AGGIUNTA LETTURA BINARIO
     if not gol:
-        sol_ext_cfd = '.csv'
-        config_cfd.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+        if '.csv' in config.RESTART_FILENAME:
+            sol_ext_cfd = '.csv'
+            config.READ_BINARY_RESTART = 'YES'
+            config_cfd.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+        else:
+            sol_ext_cfd = '.dat'
+            config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
+
     if gol:
         sol_ext_cfd = '.dat'
         config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
@@ -180,7 +186,7 @@ def mmg(config):
             os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), solfil)
 
         #--- Set RESTART_SOL=YES for runs after adaptation
-        if not nemo:
+        if not nemo and sol_ext_cfd != '.csv':     # SU2 does not interpolate ASCII files for restarts
             config_cfd.RESTART_SOL = 'YES' 
             config_cfd.RESTART_CFL = 'YES'
 
@@ -262,8 +268,8 @@ def mmg(config):
 
             #--- Load and read .csv solution and dump .sol file
 
-            fileconverter.SU2ToMeditSol(solfil.replace(sol_ext_cfd,'.csv'), 
-                                        solfil.replace('.csv', '.sol'))
+            fileconverter.SU2ToMeditSol(solfil, 
+                                        solfil.replace(sol_ext_cfd, '.sol'))
 
             mesh_size = int(mesh_sizes[iSiz])
             if iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
@@ -280,11 +286,11 @@ def mmg(config):
             meshin = config_cfd['MESH_FILENAME'].replace('.su2','.mesh')
             meshout = config_cfd['MESH_FILENAME'].replace('.su2','_adap.mesh')
             if gol:
-                adjsolfile = config_cfd_ad['RESTART_ADJ_FILENAME'].replace('.csv','.sol')
+                adjsolfile = config_cfd_ad['RESTART_ADJ_FILENAME'].replace('.dat','.sol')
                 solfile = config_cfd['RESTART_FILENAME'].replace(sol_ext_cfd,'.sol')
                 su2adap.call_mmg(meshin, meshout, solfile, config_mmg)
             else:
-                solfile = config_cfd['RESTART_FILENAME'].replace('.csv','.sol')
+                solfile = config_cfd['RESTART_FILENAME'].replace(sol_ext_cfd,'.sol')
                 su2adap.call_mmg(meshin, meshout, solfile, config_mmg)
 
             mesh_new = fileconverter.ReadMeshMedit(meshout)
@@ -310,7 +316,7 @@ def mmg(config):
             os.chdir(os.path.join('..',dir))
 
             meshfil = config_cfd['MESH_FILENAME']
-            #solfil  = f'flo{sol_ext}'
+            solfil_ini  = f'restart_flow{sol_ext_cfd}'
 
             fileconverter.WriteMeshSU2(meshfil)
 
@@ -332,10 +338,14 @@ def mmg(config):
 
             #--- Run su2
 
+            # link to restart if restart file is binary
+            if sol_ext_cfd != '.csv':
+                os.symlink(os.path.join(f'../ite{global_iter-1}', config.RESTART_FILENAME), solfil_ini)
+
             try: # run with redirected outputs
 
-                solfil_ini = f'flo_ini{sol_ext_cfd}'
-                # solfil_ini  = f'restart_flow{sol_ext}'
+                # solfil_ini = f'flo_ini{sol_ext_cfd}'
+                # solfil_ini  = f'restart_flow{sol_ext_cfd}'
                 # os.rename(solfil, solfil_ini)
 
                 su2adap.update_flow_config(config_cfd, meshfil, solfil, solfil_ini,
