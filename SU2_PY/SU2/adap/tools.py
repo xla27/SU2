@@ -58,9 +58,20 @@ def get_mmg_config(config_su2, dim):
     config_mmg['dim']         = int(dim)
     config_mmg['hmax']        = float(config_su2['ADAP_HMAX'])
     config_mmg['hmin']        = float(config_su2['ADAP_HMIN'])
-    config_mmg['hausd']       = float(config_su2['ADAP_HAUSD'])
     config_mmg['Lp']          = float(config_su2['ADAP_NORM'])
     config_mmg['mmg_log']     = 'mmg.out'
+
+    if '(' in config_su2['ADAP_HAUSD']:
+        config_mmg['hausd'] = {}
+        parameters = config_su2['ADAP_HAUSD'].lstrip('(').rstrip(')').split(',')
+
+        if len(parameters) % 2:
+            raise KeyError('Missing values in ADAP_HAUSD!')
+        else:
+            for i_par in range(0, len(parameters), 2):
+                config_mmg['hausd'][parameters[i_par].strip(' ')] = float(parameters[i_par+1])
+    else:
+        config_mmg['hausd'] = float(config_su2['ADAP_HAUSD'])
     
     return config_mmg
 
