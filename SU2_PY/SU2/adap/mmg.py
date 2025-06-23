@@ -39,8 +39,6 @@ def mmg(config):
         config - an SU2 config object
     """
 
-    print('SU2-MMG Anisotropic Mesh Adaptation')
-
     #--- Check config options related to mesh adaptation
 
     pyadap_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 
@@ -281,6 +279,8 @@ def mmg(config):
 
             #     fileconverter.SU2ToMeditSol(adjsolfil, adjsolfil.replace('.csv', '.sol'))
 
+            #--- Writing (if necessary) the parameter file for Hausdorff distances
+            fileconverter.WriteParamFile(config_mmg, meshfil.rstrip('.su2'))
 
             #--- Adapt mesh with MMG
             meshin = config_cfd['MESH_FILENAME'].replace('.su2','.mesh')
