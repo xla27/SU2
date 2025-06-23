@@ -45,6 +45,88 @@ def main():
     (options, args)=parser.parse_args()
 
     options.partitions = int( options.partitions )
+
+    sys.stdout.write(
+        "\n-------------------------------------------------------------------------\n"
+    )
+    sys.stdout.write(
+        "|    ___ _   _ ___                                                      |\n"
+    )
+    sys.stdout.write(
+        '|   / __| | | |_  )   Release 8.0.1 "Harrier"                           |\n'
+    )
+    sys.stdout.write(
+        "|   \\__ \\ |_| |/ /                                                      |\n"
+    )
+    sys.stdout.write(
+        "|   |___/\\___//___|   Anisotropic Mesh Adaptation Script                |\n"
+    )
+    sys.stdout.write(
+        "|                                                                       |\n"
+    )
+    sys.stdout.write(
+        "-------------------------------------------------------------------------\n"
+    )
+    sys.stdout.write(
+        "| SU2 Project Website: https://su2code.github.io                        |\n"
+    )
+    sys.stdout.write(
+        "|                                                                       |\n"
+    )
+    sys.stdout.write(
+        "| The SU2 Project is maintained by the SU2 Foundation                   |\n"
+    )
+    sys.stdout.write(
+        "| (http://su2foundation.org)                                            |\n"
+    )
+    sys.stdout.write(
+        "-------------------------------------------------------------------------\n"
+    )
+    sys.stdout.write(
+        "| Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)                |\n"
+    )
+    sys.stdout.write(
+        "|                                                                       |\n"
+    )
+    sys.stdout.write(
+        "| SU2 is free software; you can redistribute it and/or                  |\n"
+    )
+    sys.stdout.write(
+        "| modify it under the terms of the GNU Lesser General Public            |\n"
+    )
+    sys.stdout.write(
+        "| License as published by the Free Software Foundation; either          |\n"
+    )
+    sys.stdout.write(
+        "| version 2.1 of the License, or (at your option) any later version.    |\n"
+    )
+    sys.stdout.write(
+        "|                                                                       |\n"
+    )
+    sys.stdout.write(
+        "| SU2 is distributed in the hope that it will be useful,                |\n"
+    )
+    sys.stdout.write(
+        "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |\n"
+    )
+    sys.stdout.write(
+        "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |\n"
+    )
+    sys.stdout.write(
+        "| Lesser General Public License for more details.                       |\n"
+    )
+    sys.stdout.write(
+        "|                                                                       |\n"
+    )
+    sys.stdout.write(
+        "| You should have received a copy of the GNU Lesser General Public      |\n"
+    )
+    sys.stdout.write(
+        "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |\n"
+    )
+    sys.stdout.write(
+        "-------------------------------------------------------------------------\n"
+    )
     
     # Run Mesh Adaptation
     mesh_adaptation ( options.filename   ,
