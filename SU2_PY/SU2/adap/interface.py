@@ -174,14 +174,10 @@ class MeshSolConverter():
 
         metric_dict = {}
 
-        try:
-            with open(su2_filename, "r") as f:
-                line = f.readline()
-        except:
-            raise("The solution file must be in ASCII format!")
-
-        fieldnames = line.lstrip('"').rstrip('"\n')
-        fieldnames = fieldnames.split('","')
+        if '.dat' in su2_filename:
+            fieldnames, data = read_SU2_restart_binary(su2_filename)
+        elif '.csv' in su2_filename:
+            fieldnames, data = read_SU2_restart_ascii(su2_filename) 
 
         if "z" in fieldnames:
             dim = 3
@@ -190,17 +186,19 @@ class MeshSolConverter():
 
         metric_dict['Dim'] = dim
 
-        solution_dict = csv2dict(su2_filename, fieldnames=fieldnames) 
+        if dim == 2:
+            metric_dict ['Metric_xx'] = data[:,-3]
+            metric_dict ['Metric_xy'] = data[:,-2]
+            metric_dict ['Metric_yy'] = data[:,-1]
+        elif dim == 3:
+            metric_dict ['Metric_xx'] = data[:,-6]
+            metric_dict ['Metric_xy'] = data[:,-5]
+            metric_dict ['Metric_yy'] = data[:,-4]
+            metric_dict ['Metric_xz'] = data[:,-3]
+            metric_dict ['Metric_yz'] = data[:,-2]
+            metric_dict ['Metric_zz'] = data[:,-1]      
 
-        metric_dict ['Metric_xx'] = solution_dict['Metric_xx']
-        metric_dict ['Metric_xy'] = solution_dict['Metric_xy']
-        metric_dict ['Metric_yy'] = solution_dict['Metric_yy']
-        if dim == 3:
-            metric_dict ['Metric_xz'] = solution_dict['Metric_xz']
-            metric_dict ['Metric_yz'] = solution_dict['Metric_yz']
-            metric_dict ['Metric_zz'] = solution_dict['Metric_zz']      
-
-        metric_dict['NumberVertices'] = solution_dict['PointID'].shape[0]  
+        metric_dict['NumberVertices'] = data.shape[0]  
         
         self.SetMetricDict(metric_dict)
 
@@ -475,18 +473,75 @@ def run_command(Command):
 
     return 
 
-def csv2dict(filename, fieldnames, delimiter=','):
-    data = dict(zip(fieldnames, [None]*len(fieldnames)))
-    with open(filename, 'r') as csvfile:
-        reader = csv.DictReader(csvfile, fieldnames=fieldnames, delimiter=delimiter)
-        for i, item in enumerate(reader):
+CGNS_STRING_SIZE = 33  # Fixed string size per CGNS standard
+
+def read_SU2_restart_binary(filename):
+    """
+    Read SU2 binary restart file and return fields and data array.
+
+    Returns:
+        fields (List[str]): Field names including "Point_ID".
+        data (np.ndarray): Data array of shape (nPoints, nFields).
+
+    Note that the Point_ID column is implicit in the ordering
+    """
+    #filename += ".dat"
+    fields = ["Point_ID"]  # Initialize with Point_ID as SU2 convention
+
+    with open(filename, 'rb') as f:
+        # Read 5 integers (magic number + metadata)
+        header = np.fromfile(f, dtype=np.int32, count=5)
+        if header.size != 5:
+            raise RuntimeError("Error reading header from restart file.")
+        
+        magic_number, nFields, nPoints, _, _ = header
+
+        # Check the magic number
+        if magic_number != 535532:
+            raise RuntimeError(f"{filename} is not a binary SU2 restart file.")
+
+        # Read field names (each is CGNS_STRING_SIZE characters)
+        for _ in range(nFields):
+            name_bytes = f.read(CGNS_STRING_SIZE)
+            name_str = name_bytes.decode('utf-8').strip('\x00').strip()
+            fields.append(name_str)
+
+        # Read restart data as a flat array of doubles
+        data = np.fromfile(f, dtype=np.float64, count=nFields * nPoints)
+
+        if data.size != nFields * nPoints:
+            raise RuntimeError("Error reading restart data.")
+
+        # Reshape to 2D: each row is a point, each column is a field
+        data = data.reshape((nPoints, nFields))
+
+    return fields, data
+
+
+def read_SU2_restart_ascii(filename):
+    """
+    Read SU2 ASCII restart file and return fields and data array.
+
+    Returns:
+        fields (List[str]): Field names.
+        data (np.ndarray): Data array of shape (nPoints, nFields).
+    """
+
+    # reading the first line to get the fields name
+    try:
+        with open(filename, "r") as f:
+            line = f.readline()
+    except:
+        raise("The solution file must be in ASCII format!")
+
+    fields = line.lstrip('"').rstrip('"\n')
+    fields = fields.split('","')
+
+    data = np.empty((0, len(fields)))
+    with open(filename, 'r') as f:
+        for i, line in enumerate(f):
             if i == 0:
                 continue
-            elif i == 1:
-                for key in fieldnames:
-                    data[key] = np.array([float(item.get(key))])
-            else:
-                for key in fieldnames:
-                    data[key] = np.append(data[key], float(item.get(key)))
+            data = np.vstack((data, np.array(line.split(','), dtype=np.float64)))
 
-    return data
+    return fields, data
