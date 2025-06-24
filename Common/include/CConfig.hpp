@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -108,7 +108,6 @@ private:
   su2double Opt_RelaxFactor;              /*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;         /*!< \brief Bounds for the line search. */
   su2double StartTime;
-  unsigned short SmoothNumGrid;           /*!< \brief Smooth the numerical grid. */
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -133,11 +132,13 @@ private:
   Sens_Remove_Sharp,        /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
+  Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
   Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;  /*!< \brief Damping factor for the engine exhaust. */
+  unsigned long Bc_Eval_Freq;      /*!< \brief Evaluation frequency for Engine and Actuator disk markers. */
   su2double Damp_Res_Restric,     /*!< \brief Damping factor for the residual restriction. */
   Damp_Correc_Prolong;            /*!< \brief Damping factor for the correction prolongation. */
   su2double Position_Plane;    /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
@@ -192,6 +193,7 @@ private:
   nMarker_Fluid_Load,             /*!< \brief Number of markers in which the flow load is computed/employed. */
   nMarker_Fluid_InterfaceBound,   /*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,           /*!< \brief Number of conjugate heat transfer interface markers. */
+  nMarker_ContactResistance,      /*!< \brief Number of CHT interfaces with contact resistance. */
   nMarker_Inlet,                  /*!< \brief Number of inlet flow markers. */
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
@@ -235,6 +237,7 @@ private:
   *Marker_MixingPlaneInterface,   /*!< \brief MixingPlane interface boundary markers. */
   *Marker_TurboBoundIn,           /*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,          /*!< \brief Turbomachinery performance boundary donor markers. */
+  *Marker_Turbomachinery,         /*!< \breif Turbomachinery markers */
   *Marker_NearFieldBound,         /*!< \brief Near Field boundaries markers. */
   *Marker_Deform_Mesh,            /*!< \brief Deformable markers at the boundary. */
   *Marker_Deform_Mesh_Sym_Plane,  /*!< \brief Marker with symmetric deformation. */
@@ -396,6 +399,7 @@ private:
   su2double **Periodic_RotCenter;            /*!< \brief Rotational center for each periodic boundary. */
   su2double **Periodic_RotAngles;            /*!< \brief Rotation angles for each periodic boundary. */
   su2double **Periodic_Translation;          /*!< \brief Translation vector for each periodic boundary. */
+  su2double *CHT_ContactResistance;          /*!< \brief Contact resistance values for each solid-solid CHT interface. */
   string *Marker_CfgFile_TagBound;           /*!< \brief Global index for markers using config file. */
   unsigned short *Marker_All_KindBC,         /*!< \brief Global index for boundaries using grid information. */
   *Marker_CfgFile_KindBC;                    /*!< \brief Global index for boundaries using config file. */
@@ -440,6 +444,7 @@ private:
 
   TURBO_PERF_KIND *Kind_TurboPerf;           /*!< \brief Kind of turbomachynery architecture.*/
   TURBOMACHINERY_TYPE *Kind_TurboMachinery;
+  su2vector<TURBO_INTERFACE_KIND> Kind_TurboInterface;
 
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
@@ -463,6 +468,7 @@ private:
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;              /*!< \brief Number of ffd boxes. */
   unsigned short nTurboMachineryKind;  /*!< \brief Number turbomachinery types specified. */
+  unsigned short nTurboInterfaces;     /*!< \brief Number of turbomachiery interfaces */
   unsigned short nParamDV;             /*!< \brief Number of parameters of the design variable. */
   string DV_Filename;                  /*!< \brief Filename for providing surface positions from an external parameterization. */
   string DV_Unordered_Sens_Filename;   /*!< \brief Filename of volume sensitivities in an unordered ASCII format. */
@@ -530,9 +536,8 @@ private:
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   n_Datadriven_files;
-  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
 
-  su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+  DataDrivenFluid_ParsedOptions datadriven_ParsedOptions; /*!< \brief Options for data-driven fluid analysis. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -589,6 +594,7 @@ private:
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
+  //bool ContactResistance = false; /*!< \brief Apply contact resistance for conjugate heat transfer. */
   unsigned short nID_DV;   /*!< \brief ID for the region of FEM when computed using direct differentiation. */
 
   bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
@@ -694,6 +700,7 @@ private:
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
   bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Restart_CFL,                        /*!< \brief Restart CFL (for direct, adjoint, and linearized problems).*/
+  Wrt_Restart_Compact,                /*!< \brief Write compact restart files with minimum nr. of variables. */
   Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
@@ -743,6 +750,7 @@ private:
   *Marker_All_Turbomachinery,        /*!< \brief Global index for Turbomachinery markers using the grid information. */
   *Marker_All_TurbomachineryFlag,    /*!< \brief Global index for Turbomachinery markers flag using the grid information. */
   *Marker_All_MixingPlaneInterface,  /*!< \brief Global index for MixingPlane interface markers using the grid information. */
+  *Marker_All_Giles,                 /*!< \brief Global index for Giles markers using the grid information. */
   *Marker_All_DV,                    /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,                /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Deform_Mesh,           /*!< \brief Global index for deformable markers at the boundary. */
@@ -760,6 +768,7 @@ private:
   *Marker_CfgFile_Turbomachinery,        /*!< \brief Global index for Turbomachinery  using the config information. */
   *Marker_CfgFile_TurbomachineryFlag,    /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,  /*!< \brief Global index for MixingPlane interface using the config information. */
+  *Marker_CfgFile_Giles,                 /*!< \brief Global index for Giles markers flag using the config information. */
   *Marker_CfgFile_Moving,             /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_Deform_Mesh,        /*!< \brief Global index for deformable markers at the boundary. */
   *Marker_CfgFile_Deform_Mesh_Sym_Plane, /*!< \brief Global index for markers with symmetric deformations. */
@@ -796,6 +805,7 @@ private:
   nRefOriginMoment_Z;      /*!< \brief Number of Z-coordinate moment computation origins. */
   unsigned short nMesh_Box_Size;
   short *Mesh_Box_Size;          /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  unsigned short Mesh_Box_PSolFEM; /*!< \brief FEM polynomial degree of the solution for the RECTANGLE and BOX grid formats. */
   string Mesh_FileName,          /*!< \brief Mesh input file. */
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
@@ -812,8 +822,7 @@ private:
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
-  *DataDriven_Method_FileNames;    /*!< \brief Dataset information for data-driven fluid models. */
+  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -880,6 +889,8 @@ private:
   ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
+  KFactor_LowerLimit,               /*!< \Non dimensional coefficient for lower limit of K in SST model. */
+  OmegaFactor_LowerLimit,           /*!< \Non dimensional coefficient for lower limit of omega in SST model. */
   SecondaryFlow_ActDisk,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
@@ -996,7 +1007,7 @@ private:
   bool ExtraOutput;           /*!< \brief Check if extra output need. */
   bool Wall_Functions;           /*!< \brief Use wall functions with the turbulence model */
   long ExtraHeatOutputZone;      /*!< \brief Heat solver zone with extra screen output */
-  bool DeadLoad;                 /*!< \brief Application of dead loads to the FE analysis */
+  bool CentrifugalForce;         /*!< \brief Application of centrifugal forces to the FE analysis */
   bool PseudoStatic;             /*!< \brief Application of dead loads to the FE analysis */
   bool SteadyRestart;            /*!< \brief Restart from a steady state for FSI problems. */
   su2double Newmark_beta,        /*!< \brief Parameter alpha for Newmark method. */
@@ -1005,10 +1016,13 @@ private:
   su2double *Int_Coeffs;         /*!< \brief Time integration coefficients for structural method. */
   unsigned short nElasticityMod, /*!< \brief Number of different values for the elasticity modulus. */
   nPoissonRatio,                    /*!< \brief Number of different values for the Poisson ratio modulus. */
-  nMaterialDensity;                 /*!< \brief Number of different values for the Material density. */
+  nMaterialDensity,                 /*!< \brief Number of different values for the Material density. */
+  nMaterialThermalExpansion;        /*!< \brief Number of different values for thermal expansion coefficient. */
   su2double *ElasticityMod,         /*!< \brief Value of the elasticity moduli. */
   *PoissonRatio,                    /*!< \brief Value of the Poisson ratios. */
-  *MaterialDensity;                 /*!< \brief Value of the Material densities. */
+  *MaterialDensity,                 /*!< \brief Value of the Material densities. */
+  *MaterialThermalExpansion,        /*!< \brief Value of the thermal expansion coefficients. */
+  MaterialReferenceTemperature;     /*!< \brief Value of the reference temperature for thermal expansion. */
   unsigned short nElectric_Field,   /*!< \brief Number of different values for the electric field in the membrane. */
   nDim_Electric_Field;              /*!< \brief Dimensionality of the problem. */
   unsigned short nDim_RefNode;      /*!< \brief Dimensionality of the vector . */
@@ -1101,7 +1115,7 @@ private:
   bool Radiation;                      /*!< \brief Determines if a radiation model is incorporated. */
   su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
 
-  array<su2double,5> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
+  array<su2double,6> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
   su2double vel_init[3], /*!< \brief initial velocity array for the COption class. */
   vel_inf[3],            /*!< \brief freestream velocity array for the COption class. */
   eng_cyl[7],            /*!< \brief engine box array for the COption class. */
@@ -1227,22 +1241,7 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
   /*--- Additional flamelet solver options ---*/
-  su2double flame_init[8];       /*!< \brief Initial solution parameters for flamelet solver.*/
-
-  /*--- lookup table ---*/
-  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
-  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
-  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
-  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
-  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
-  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
-
-  string* controlling_variable_names;
-  string* cv_source_names;
-  vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
-  string* lookup_names;         /*!< \brief Names of passive look-up variables. */
-  string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
-  string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
+  FluidFlamelet_ParsedOptions flamelet_ParsedOptions; /*!< \brief Additional flamelet solver options */
 
   /*--- Mesh adaptation options ---*/
   bool Compute_Metric;            /*!< \brief Determines if error estimation is taking place */
@@ -1377,7 +1376,7 @@ private:
                          su2double** & RotCenter, su2double** & RotAngles, su2double** & Translation);
 
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut);
+                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut, string* & Marker_Turbomachinery);
 
   void addActDiskOption(const string & name,
                         unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
@@ -2029,6 +2028,18 @@ public:
   su2double GetNuFactor_FreeStream(void) const { return NuFactor_FreeStream; }
 
   /*!
+   * \brief Get the k constant factor define a lower limit by multiplication with values in SST turbulence model.
+   * \return Non-dimensionalized freestream intensity.
+   */
+  su2double GetKFactor_LowerLimit(void) const { return KFactor_LowerLimit; }
+
+  /*!
+    * \brief Get the w constant factor define a lower limit by multiplication with values in SST turbulencemodel.
+    * \return Non-dimensionalized freestream intensity.
+    */
+  su2double GetOmegaFactor_LowerLimit(void) const { return OmegaFactor_LowerLimit; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized engine turbulence intensity.
    * \return Non-dimensionalized engine intensity.
    */
@@ -2163,70 +2174,6 @@ public:
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
 
   /*!
-   * \brief Get the flame initialization.
-   *        (x1,x2,x3) = flame offset.
-   *        (x4,x5,x6) = flame normal, separating unburnt from burnt.
-   *        (x7) = flame thickness, the length from unburnt to burnt conditions.
-   *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
-   * \return Flame initialization for the flamelet model.
-   */
-  const su2double* GetFlameInit() const { return flame_init; }
-
-  /*!
-   * \brief Get the number of control variables for flamelet model.
-   */
-  unsigned short GetNControlVars() const { return n_control_vars; }
-
-  /*!
-   * \brief Get the number of total transported scalars for flamelet model.
-   */
-  unsigned short GetNScalars() const { return n_scalars; }
-
-  /*!
-   * \brief Get the number of user scalars for flamelet model.
-   */
-  unsigned short GetNUserScalars() const { return n_user_scalars; }
-
-  /*!
-   * \brief Get the name of a specific controlling variable.
-   */
-  const string& GetControllingVariableName(unsigned short i_cv) const {
-    return controlling_variable_names[i_cv];
-  }
-
-  /*!
-   * \brief Get the name of the source term variable for a specific controlling variable.
-   */
-  const string& GetControllingVariableSourceName(unsigned short i_cv) const {
-    return cv_source_names[i_cv];
-  }
-  /*!
-   * \brief Get the name of the user scalar.
-   */
-  const string& GetUserScalarName(unsigned short i_user_scalar) const {
-    static const std::string none = "NONE";
-    if (n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return none;
-  }
-
-  /*!
-   * \brief Get the name of the user scalar source term.
-   */
-  const string& GetUserSourceName(unsigned short i_user_source) const {
-    static const std::string none = "NONE";
-    if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
-  }
-
-  /*!
-   * \brief Get the number of transported scalars for combustion.
-   */
-  unsigned short GetNLookups() const { return n_lookups; }
-
-  /*!
-   * \brief Get the name of the variable that we want to retrieve from the lookup table.
-   */
-  const string& GetLookupName(unsigned short i_lookup) const { return lookup_names[i_lookup]; }
-
-  /*!
    * \brief Get the Young's modulus of elasticity.
    * \return Value of the Young's modulus of elasticity.
    */
@@ -2349,6 +2296,16 @@ public:
    * \return Value of the Material Density.
    */
   su2double GetMaterialDensity(unsigned short id_val) const { return MaterialDensity[id_val]; }
+
+  /*!
+   * \brief Get the thermal expansion coefficient.
+   */
+  su2double GetMaterialThermalExpansion(unsigned short id_val) const { return MaterialThermalExpansion[id_val]; }
+
+  /*!
+   * \brief Temperature at which there is no stress from thermal expansion.
+   */
+  su2double GetMaterialReferenceTemperature() const { return MaterialReferenceTemperature; }
 
   /*!
    * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
@@ -2942,7 +2899,10 @@ public:
    * \brief Get the number of design variables.
    * \return Number of the design variables.
    */
-  unsigned short GetnDV_Value(unsigned short iDV) const { return nDV_Value[iDV]; }
+  unsigned short GetnDV_Value(unsigned short iDV) const {
+    if (!nDV_Value) return 0;
+    return nDV_Value[iDV];
+  }
 
   /*!
    * \brief Get the total number of design variables.
@@ -3489,6 +3449,13 @@ public:
   void SetMarker_All_MixingPlaneInterface(unsigned short val_marker, unsigned short val_mixpla_interface) { Marker_All_MixingPlaneInterface[val_marker] = val_mixpla_interface; }
 
   /*!
+   * \brief Set if a marker <i>val_marker</i> is part of the Giles boundary (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_giles - 0 if not part of the Giles boundary or greater than 1 if it is part.
+   */
+  void SetMarker_All_Giles(unsigned short val_marker, unsigned short val_giles) { Marker_All_Giles[val_marker] = val_giles; }
+
+  /*!
    * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
    *        (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3634,12 +3601,26 @@ public:
    */
   unsigned short GetMarker_All_TurbomachineryFlag(unsigned short val_marker) const { return Marker_All_TurbomachineryFlag[val_marker]; }
 
+/*!
+   * \brief Get the Giles boundary information for a marker <i>val_marker</i>.
+   * \param[in] val_marker value of the marker on the grid.
+   * \return 0 if is not part of the MixingPlane Interface and greater than 1 if it is part.
+   */
+  unsigned short GetMarker_All_Giles(unsigned short val_marker) const { return Marker_All_Giles[val_marker]; }
+
   /*!
    * \brief Get the number of FSI interface markers <i>val_marker</i>.
    * \param[in] void.
    * \return Number of markers belonging to the FSI interface.
    */
   unsigned short GetMarker_n_ZoneInterface(void) const { return nMarker_ZoneInterface; }
+
+  /*!
+   * \brief Get the contact resistance value of a specified interface.
+   * \param[in] val_interface interface index.
+   * \return Contact resistance value (zero by default).
+   */
+  su2double GetContactResistance(unsigned short val_interface) const { return (nMarker_ContactResistance > 0) ? CHT_ContactResistance[val_interface] : 0.0; }
 
   /*!
    * \brief Get the DV information for a marker <i>val_marker</i>.
@@ -3904,29 +3885,6 @@ public:
    * \return Fluid model that we are using.
    */
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
-
-  /*!
-   * \brief Datadriven method for EoS evaluation.
-   */
-  ENUM_DATADRIVEN_METHOD GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
-
-  /*!
-   * \brief Get name of the input file for the data-driven fluid model interpolation method.
-   * \return Name of the input file for the interpolation method.
-   */
-  const string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
-
-  /*!
-   * \brief Get number of listed look-up table or multi-layer perceptron input files.
-   * \return Number of listed data-driven method input files.
-   */
-  unsigned short GetNDataDriven_Files(void) const { return n_Datadriven_files; }
-
-  /*!
-   * \brief Get Newton solver relaxation factor for data-driven fluid models.
-   * \return Newton solver relaxation factor.
-   */
-  su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
 
   /*!
    * \brief Returns the name of the fluid we are using in CoolProp.
@@ -4314,8 +4272,7 @@ public:
   array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
 
   /*!
-   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
-   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   * \brief Returns the Roe kappa (multipler of the dissipation term).
    */
   su2double GetRoe_Kappa(void) const { return Roe_Kappa; }
 
@@ -5126,7 +5083,7 @@ public:
   /*!
    * \brief Set Monitor Outlet Pressure value for the ramp.
    */
-  void SetMonitotOutletPressure(su2double newMonPres) { MonitorOutletPressure = newMonPres;}
+  void SetMonitorOutletPressure(su2double newMonPres) { MonitorOutletPressure = newMonPres;}
 
   /*!
    * \brief Get Outlet Pressure Ramp option.
@@ -5305,6 +5262,12 @@ public:
   TURBO_PERF_KIND GetKind_TurboPerf(unsigned short val_iZone) const { return Kind_TurboPerf[val_iZone]; };
 
   /*!
+   * \brief gets interface kind for an interface marker in turbomachinery problem
+   * \return interface kind
+   */
+  TURBO_INTERFACE_KIND GetKind_TurboInterface(unsigned short interfaceIndex) const { return Kind_TurboInterface[interfaceIndex]; }
+
+  /*!
    * \brief get outlet bounds name for Turbomachinery performance calculation.
    * \return name of the bound.
    */
@@ -5439,6 +5402,12 @@ public:
    * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
    */
   bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
+
+  /*!
+   * \brief Flag for whether restart files contain only necessary variables.
+   * \return Flag <code>TRUE</code> then the code will write compact restart files.
+   */
+  bool GetWrt_Restart_Compact(void) const { return Wrt_Restart_Compact; }
 
   /*!
    * \brief Flag for whether restart solution files are overwritten.
@@ -6269,10 +6238,10 @@ public:
   bool GetAxisymmetric(void) const { return Axisymmetric; }
 
   /*!
-   * \brief Get information about there is a smoothing of the grid coordinates.
-   * \return <code>TRUE</code> if there is smoothing of the grid coordinates; otherwise <code>FALSE</code>.
+   * \brief Get information about GPU support.
+   * \return <code>TRUE</code> if cuda is enabled; otherwise <code>FALSE</code>.
    */
-  unsigned short GetSmoothNumGrid(void) const { return SmoothNumGrid; }
+  bool GetCUDA(void) const { return Enable_Cuda; }
 
   /*!
    * \brief Subtract one to the index of the finest grid (full multigrid strategy).
@@ -6372,6 +6341,12 @@ public:
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_MixingPlaneInterface(const string& val_marker) const;
+
+  /*!
+   * \brief Get the Giles boundary information from the config definition for the marker <i>val_marker</i>.
+   * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_Giles(const string& val_marker) const;
 
   /*!
    * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
@@ -6490,6 +6465,12 @@ public:
    * \return Value of the minimum residual value (log10 scale).
    */
   su2double GetMinLogResidual(void) const { return MinLogResidual; }
+
+  /*!
+   * \brief Evaluation frequency for Engine and Actuator disk markers.
+   * \return Value Evaluation frequency .
+   */
+  unsigned long GetBc_Eval_Freq(void) const { return Bc_Eval_Freq; }
 
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
@@ -6840,7 +6821,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetInlet_Ttotal(const string& val_index) const;
+  su2double GetInletTtotal(const string& val_index) const;
 
   /*!
    * \brief Get the temperature at a supersonic inlet boundary.
@@ -6882,14 +6863,14 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetInlet_Ptotal(const string& val_index) const;
+  su2double GetInletPtotal(const string& val_index) const;
 
   /*!
    * \brief Set the total pressure at an inlet boundary.
    * \param[in] val_pressure - Pressure value at the inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    */
-  void SetInlet_Ptotal(su2double val_pressure, const string& val_marker);
+  void SetInletPtotal(su2double val_pressure, const string& val_marker);
 
   /*!
    * \brief Get the species values at an inlet boundary
@@ -6929,7 +6910,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The flow direction vector.
    */
-  const su2double* GetInlet_FlowDir(const string& val_index) const;
+  const su2double* GetInletFlowDir(const string& val_index) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -8867,10 +8848,9 @@ public:
   su2double GetAitkenDynMinInit(void) const { return AitkenDynMinInit; }
 
   /*!
-   * \brief Decide whether to apply dead loads to the model.
-   * \return <code>TRUE</code> if the dead loads are to be applied, <code>FALSE</code> otherwise.
+   * \brief Decide whether to apply centrifugal forces to the model.
    */
-  bool GetDeadLoad(void) const { return DeadLoad; }
+  bool GetCentrifugalForce(void) const { return CentrifugalForce; }
 
   /*!
    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
@@ -9533,6 +9513,12 @@ public:
   su2double GetMeshBoxOffset(unsigned short val_iDim) const { return mesh_box_offset[val_iDim]; }
 
   /*!
+   * \brief Get the polynomial degree of the FEM solution for the analytic RECTANGLE or BOX.
+   * \return The polynomial degree of the FEM solution.
+   */
+  unsigned short GetMeshBoxPSolFEM(void) const { return Mesh_Box_PSolFEM; }
+
+  /*!
    * \brief Get the number of screen output variables requested (maximum 6)
    */
   unsigned short GetnScreenOutput(void) const { return nScreenOutput; }
@@ -9920,5 +9906,18 @@ public:
    * \return Mesh complexity
    */
   unsigned long GetAdap_Complexity(void) const { return Adap_Complexity; }
+
+
+  /*!
+   * \brief Get parsed option data structure for data-driven fluid model.
+   * \return option data structure for data-driven fluid model.
+   */
+  const DataDrivenFluid_ParsedOptions& GetDataDrivenParsedOptions() const { return datadriven_ParsedOptions; }
+
+  /*!
+   * \brief Get parsed option data structure for the flamelet fluid model.
+   * \return option data structure for the flamelet fluid model.
+   */
+  const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
 
 };
