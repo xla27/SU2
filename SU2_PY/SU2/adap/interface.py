@@ -35,8 +35,8 @@ import numpy as np
 # ------------------------------------------------------------
 MMG_RUN = os.environ["MMG_RUN"]
 sys.path.append(MMG_RUN)
-command_mmg2D = 'mmg2d_O3'
-command_mmg3D = 'mmg3d_O3'
+command_mmg2D = MMG_RUN+'/mmg2d_O3'
+command_mmg3D = MMG_RUN+'/mmg3d_O3'
 
 # ------------------------------------------------------------
 #  SU2-MMG Interface Functions
