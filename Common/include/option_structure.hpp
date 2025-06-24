@@ -2641,7 +2641,7 @@ enum class MPI_QUANTITIES {
   NON_PHYSICAL         ,  /*!< \brief Whether node is non-physical. */
   SMATRIX              ,  /*!< \brief Conservative solution gradient basis communication. */
   SMATRIX_RECON        ,  /*!< \brief Conservative solution gradient basis communication. */
-  VOLUME               ,   /*!< \brief Dual cell volume communication. */
+  VOLUME               ,  /*!< \brief Dual cell volume communication. */
 };
 
 /*!

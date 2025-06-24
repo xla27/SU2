@@ -390,8 +390,8 @@ public:
     }
 
     //--- communicate the solution values via MPI
-    InitiateComms(geometry, config, AUXVAR_ADAPT);
-    CompleteComms(geometry, config, AUXVAR_ADAPT);
+    InitiateComms(geometry, config, MPI_QUANTITIES::AUXVAR_ADAPT);
+    CompleteComms(geometry, config, MPI_QUANTITIES::AUXVAR_ADAPT);
   }
 
   /*!

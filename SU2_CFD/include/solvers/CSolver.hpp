@@ -586,7 +586,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetHessian_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+  void SetHessian_GG(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver);
 
   /*!
    * \brief Compute the L2 projection Hessian of the solution.
@@ -626,7 +626,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetHessian_LS(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+  void SetHessian_LS(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver);
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.

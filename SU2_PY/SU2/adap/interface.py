@@ -543,7 +543,7 @@ def build_command(command_mmg, options):
         the_Command += ' -hgrad ' + str(options['hgrad'])
     if 'hausd' in options.keys() and not isinstance(options['hausd'], dict):
         the_Command += ' -hausd ' + str(options['hausd'])
-    the_Command += ' > ' + options['mmg_log']
+    the_Command += ' > ' + options['mmg_log'] + ' 2> ' + options['mmg_err']
     
     return the_Command
 

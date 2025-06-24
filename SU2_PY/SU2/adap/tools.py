@@ -60,6 +60,7 @@ def get_mmg_config(config_su2, dim):
     config_mmg['hmin']        = float(config_su2['ADAP_HMIN'])
     config_mmg['Lp']          = float(config_su2['ADAP_NORM'])
     config_mmg['mmg_log']     = 'mmg.out'
+    config_mmg['mmg_err']     = 'mmg.err'
 
     if '(' in config_su2['ADAP_HAUSD']:
         config_mmg['hausd'] = {}

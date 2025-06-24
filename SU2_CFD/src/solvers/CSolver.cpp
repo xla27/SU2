@@ -1380,23 +1380,23 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case GRADIENT_ADAPT:
+    case MPI_QUANTITIES::GRADIENT_ADAPT:
       COUNT_PER_POINT  = config->GetGoal_Oriented_Metric()? nVar*nDim : config->GetnAdap_Sensor()*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case AUXVAR_ADAPT:
+    case MPI_QUANTITIES::AUXVAR_ADAPT:
       COUNT_PER_POINT  = nAuxGradAdap;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case AUXVAR_GRADIENT_ADAPT:
+    case MPI_QUANTITIES::AUXVAR_GRADIENT_ADAPT:
       COUNT_PER_POINT  = nAuxGradAdap*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case HESSIAN:
+    case MPI_QUANTITIES::HESSIAN:
       COUNT_PER_POINT  = config->GetGoal_Oriented_Metric()? 3*(nDim-1)*nVar : 3*(nDim-1)*config->GetnAdap_Sensor();
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case METRIC:
+    case MPI_QUANTITIES::METRIC:
       COUNT_PER_POINT  = 3*(nDim-1);
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -2229,7 +2229,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix);
 }
 
-void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver) {
 
   //--- communicate the solution values via MPI
   MPI_QUANTITIES commSol = config->GetGoal_Oriented_Metric()? MPI_QUANTITIES::SOLUTION : MPI_QUANTITIES::AUXVAR_ADAPT;
@@ -2241,7 +2241,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const un
   auto nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
 
   computeGradientsGreenGauss(this, MPI_QUANTITIES::GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, nHess, gradient);
+                             *config, solution, 0, nHess, idxVel, gradient);
 
   // CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
   // CorrectWallGradient(geometry, config, Kind_Solver);
@@ -2284,7 +2284,7 @@ void CSolver::SetGradient_AuxVar_Adapt_GG(CGeometry *geometry, const CConfig *co
   auto& gradient = base_nodes->GetGradient_AuxVar_Adapt();
 
   computeGradientsGreenGauss(this, MPI_QUANTITIES::AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, nAuxGradAdap, gradient);
+                             *config, solution, 0, nAuxGradAdap, -1, gradient);
 
 }
 
@@ -2298,89 +2298,12 @@ void CSolver::SetGradient_AuxVar_Adapt_L2_Proj(CGeometry *geometry, const CConfi
 
 }
 
-void CSolver::SetHessian_LS(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+void CSolver::SetHessian_LS(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver) {
 
   if (rank == MASTER_NODE)
     cout << "Least squares Hessian computation not currently supported.\nUsing Green-Gauss instead.\n" <<endl;
 
-  SetHessian_GG(geometry, config, Kind_Solver);
-}
-
-void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-
-  //--- communicate the solution values via MPI
-  MPI_QUANTITIES commSol = config->GetGoal_Oriented_Metric()? MPI_QUANTITIES::SOLUTION : MPI_QUANTITIES::AUXVAR_ADAPT;
-  InitiateComms(geometry, config, commSol);
-  CompleteComms(geometry, config, commSol);
-
-  const auto& solution = config->GetGoal_Oriented_Metric()? base_nodes->GetSolution() : base_nodes->GetAuxVar_Adapt();
-  auto& gradient = base_nodes->GetGradient_Adapt();
-  auto nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
-
-  computeGradientsGreenGauss(this, MPI_QUANTITIES::GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, nHess, gradient);
-
-  // CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
-  // CorrectWallGradient(geometry, config, Kind_Solver);
-
-  auto& hessian = base_nodes->GetHessian();
-
-  computeHessiansGreenGauss(this, MPI_QUANTITIES::HESSIAN, PERIODIC_SOL_GG, *geometry,
-                            *config, gradient, 0, nHess, hessian);
-
-  CorrectBoundHessian(geometry, config, Kind_Solver);
-
-}
-
-void CSolver::SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-
-  //--- communicate the solution values via MPI
-  MPI_QUANTITIES commSol = config->GetGoal_Oriented_Metric()? MPI_QUANTITIES::SOLUTION : MPI_QUANTITIES::AUXVAR_ADAPT;
-  InitiateComms(geometry, config, commSol);
-  CompleteComms(geometry, config, commSol);
-
-  const auto& solution = config->GetGoal_Oriented_Metric()? base_nodes->GetSolution() : base_nodes->GetAuxVar_Adapt();
-  auto& gradient = base_nodes->GetGradient_Adapt();
-  auto nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
-
-  computeGradientsL2Projection(this, MPI_QUANTITIES::GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                               *config, solution, 0, nHess, gradient);
-
-  CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
-
-  auto& hessian = base_nodes->GetHessian();
-
-  computeHessiansL2Projection(this, MPI_QUANTITIES::HESSIAN, PERIODIC_SOL_GG, *geometry,
-                              *config, gradient, 0, nHess, hessian);
-
-}
-
-void CSolver::SetGradient_AuxVar_Adapt_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-
-  const auto& solution = base_nodes->GetAuxVar_Adapt();
-  auto& gradient = base_nodes->GetGradient_AuxVar_Adapt();
-
-  computeGradientsGreenGauss(this, MPI_QUANTITIES::AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, nAuxGradAdap, gradient);
-
-}
-
-void CSolver::SetGradient_AuxVar_Adapt_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-
-  const auto& solution = base_nodes->GetAuxVar_Adapt();
-  auto& gradient = base_nodes->GetGradient_AuxVar_Adapt();
-
-  computeGradientsL2Projection(this, MPI_QUANTITIES::AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
-                               *config, solution, 0, nAuxGradAdap, gradient);
-
-}
-
-void CSolver::SetHessian_LS(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
-
-  if (rank == MASTER_NODE)
-    cout << "Least squares Hessian computation not currently supported.\nUsing Green-Gauss instead.\n" <<endl;
-
-  SetHessian_GG(geometry, config, Kind_Solver);
+  SetHessian_GG(geometry, config, idxVel, Kind_Solver);
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {

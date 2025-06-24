@@ -132,36 +132,9 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
     case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1); break;
   }
 
-  if (reconstruction) {
-    weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-    commPer = weighted? PERIODIC_PRIM_LS_R : PERIODIC_PRIM_ULS_R;
-  }
-  else {
-    weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-    commPer = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
-  }
-
-  const auto& primitives = nodes->GetPrimitive();
-  auto& rmatrix = nodes->GetRmatrix();
-  auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
-  const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
-
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
-                               primitives, 0, nPrimVar, gradient, rmatrix);
+  if (limiter && muscl) SetSolution_Limiter(geometry, config);
 }
 
-template <class V>
-void CScalarSolver<V>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) {
-  auto kindLimiter = config->GetKind_SlopeLimit_Flow();
-  const auto& primitives = nodes->GetPrimitive();
-  const auto& gradient = nodes->GetGradient_Reconstruction();
-  auto& primMin = nodes->GetSolution_Min();
-  auto& primMax = nodes->GetSolution_Max();
-  auto& limiter = nodes->GetLimiter();
-
-  computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2, *geometry, *config, 0,
-                  nPrimVar, primitives, gradient, primMin, primMax, limiter);
-}
 
 template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,

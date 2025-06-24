@@ -333,7 +333,7 @@ void CSinglezoneDriver::ComputeMetric() {
 
   if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
     if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
-    solver_flow->SetHessian_GG(geometry, config, RUNTIME_FLOW_SYS);
+    solver_flow->SetHessian_GG(geometry, config, -1, RUNTIME_FLOW_SYS);
   }
   else {
     if(rank == MASTER_NODE) cout << "Computing Hessians using L2 projection." << endl;

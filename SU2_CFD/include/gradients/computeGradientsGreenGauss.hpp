@@ -343,24 +343,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   }
 }
 
-template <class FieldType, class GradientType>
-void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
-                                CGeometry& geometry, const CConfig& config, const FieldType& field,
-                                const size_t varBegin, const size_t varEnd, const int idxVel, GradientType& gradient) {
-  switch (geometry.GetnDim()) {
-    case 2:
-      detail::computeGradientsGreenGauss<2>(solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin,
-                                            varEnd, idxVel, gradient);
-      break;
-    case 3:
-      detail::computeGradientsGreenGauss<3>(solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin,
-                                            varEnd, idxVel, gradient);
-      break;
-    default:
-      SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);
-      break;
-  }
-}
 
 template<class GradientType>
 void computeHessiansGreenGauss(CSolver* solver,
