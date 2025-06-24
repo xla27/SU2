@@ -156,10 +156,11 @@ def get_adap_sensors(config):
 
 def set_flow_config_ini(config, cur_solfil, sensor_tags, mesh_size):
     """Set primal config for initial solution"""
-    config.CONV_FILENAME    = 'history'
-    config.RESTART_FILENAME = cur_solfil
-    config.HISTORY_OUTPUT   = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'CFL_NUMBER']
-    config.MATH_PROBLEM     = 'DIRECT'
+    config.CONV_FILENAME       = 'history'
+    config.RESTART_FILENAME    = cur_solfil
+    config.HISTORY_OUTPUT      = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'CFL_NUMBER']
+    config.MATH_PROBLEM        = 'DIRECT'
+    config.WRT_RESTART_COMPACT = 'NO'
     if 'GOAL' in sensor_tags:
         config.VOLUME_OUTPUT  = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL'
         config.COMPUTE_METRIC = 'NO'
@@ -174,12 +175,12 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.RESTART_ADJ_FILENAME = cur_solfil_adj
     config.SOLUTION_FILENAME    = cur_solfil
     config.RESTART_FILENAME     = cur_solfil
+    config.WRT_RESTART_COMPACT  = 'NO'
     config.MATH_PROBLEM         = 'DISCRETE_ADJOINT'
     config.VOLUME_OUTPUT        = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, RESIDUAL, METRIC'
     config.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
     config.COMPUTE_METRIC       = 'YES'
     config.ADAP_COMPLEXITY      = int(mesh_size)
-    #config.RESTART_CFL          = 'YES'
 
 def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_iter, flow_cfl, sensor_tags, mesh_size):
     """Set primal config for current solution"""
