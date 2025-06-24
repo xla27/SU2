@@ -3,14 +3,14 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1616,11 +1616,15 @@ class COptionTurboPerformance : public COptionBase {
   unsigned short& size;
   string*& marker_turboIn;
   string*& marker_turboOut;
+  string*& markers;
 
  public:
   COptionTurboPerformance(const string option_field_name, unsigned short& nMarker_TurboPerf,
-                          string*& Marker_TurboBoundIn, string*& Marker_TurboBoundOut)
-      : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut) {
+                          string*& Marker_TurboBoundIn, string*& Marker_TurboBoundOut, string*& Marker_Turbomachinery)
+      : size(nMarker_TurboPerf),
+        marker_turboIn(Marker_TurboBoundIn),
+        marker_turboOut(Marker_TurboBoundOut),
+        markers(Marker_Turbomachinery) {
     this->name = option_field_name;
   }
 
@@ -1634,6 +1638,7 @@ class COptionTurboPerformance : public COptionBase {
       this->size = 0;
       this->marker_turboIn = nullptr;
       this->marker_turboOut = nullptr;
+      this->markers = nullptr;
       return "";
     }
 
@@ -1644,8 +1649,14 @@ class COptionTurboPerformance : public COptionBase {
       this->size = 0;
       this->marker_turboIn = nullptr;
       this->marker_turboOut = nullptr;
+      this->markers = nullptr;
       ;
       return newstring;
+    }
+
+    this->markers = new string[totalVals];
+    for (unsigned long i = 0; i < totalVals; i++) {
+      this->markers[i].assign(option_value[i]);
     }
 
     unsigned long nVals = totalVals / mod_num;
@@ -1664,6 +1675,7 @@ class COptionTurboPerformance : public COptionBase {
     this->size = 0;
     this->marker_turboIn = nullptr;
     this->marker_turboOut = nullptr;
+    this->markers = nullptr;
   }
 };
 
