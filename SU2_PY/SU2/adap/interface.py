@@ -208,30 +208,34 @@ class MeshSolConverter():
         metric_dict = {}
 
         if '.dat' in su2_filename:
-            fieldnames, data = read_SU2_restart_binary(su2_filename)
+            metric_dict = read_SU2_restart_binary(su2_filename)
         elif '.csv' in su2_filename:
-            fieldnames, data = read_SU2_restart_ascii(su2_filename) 
+            metric_dict = read_SU2_restart_ascii(su2_filename) 
 
-        if "z" in fieldnames:
-            dim = 3
-        else:
-            dim = 2
+        print(metric_dict['Metric_xx'])
 
-        metric_dict['Dim'] = dim
+        # nPoints, nMetric = metric_data.shape
 
-        if dim == 2:
-            metric_dict ['Metric_xx'] = data[:,-3]
-            metric_dict ['Metric_xy'] = data[:,-2]
-            metric_dict ['Metric_yy'] = data[:,-1]
-        elif dim == 3:
-            metric_dict ['Metric_xx'] = data[:,-6]
-            metric_dict ['Metric_xy'] = data[:,-5]
-            metric_dict ['Metric_yy'] = data[:,-4]
-            metric_dict ['Metric_xz'] = data[:,-3]
-            metric_dict ['Metric_yz'] = data[:,-2]
-            metric_dict ['Metric_zz'] = data[:,-1]      
+        # if nMetric == 6:
+        #     dim = 3
+        # else:
+        #     dim = 2
 
-        metric_dict['NumberVertices'] = data.shape[0]  
+        # metric_dict['Dim'] = dim
+
+        # if dim == 2:
+        #     metric_dict ['Metric_xx'] = data[:,-3]
+        #     metric_dict ['Metric_xy'] = data[:,-2]
+        #     metric_dict ['Metric_yy'] = data[:,-1]
+        # elif dim == 3:
+        #     metric_dict ['Metric_xx'] = data[:,-6]
+        #     metric_dict ['Metric_xy'] = data[:,-5]
+        #     metric_dict ['Metric_yy'] = data[:,-4]
+        #     metric_dict ['Metric_xz'] = data[:,-3]
+        #     metric_dict ['Metric_yz'] = data[:,-2]
+        #     metric_dict ['Metric_zz'] = data[:,-1]      
+
+        # metric_dict['NumberVertices'] = data.shape[0]  
         
         self.SetMetricDict(metric_dict)
 
@@ -576,8 +580,8 @@ def read_SU2_restart_binary(filename):
 
     Note that the Point_ID column is implicit in the ordering
     """
-    #filename += ".dat"
-    fields = ["Point_ID"]  # Initialize with Point_ID as SU2 convention
+
+    restartFields = []  
 
     with open(filename, 'rb') as f:
         # Read 5 integers (magic number + metadata)
@@ -595,7 +599,7 @@ def read_SU2_restart_binary(filename):
         for _ in range(nFields):
             name_bytes = f.read(CGNS_STRING_SIZE)
             name_str = name_bytes.decode('utf-8').strip('\x00').strip()
-            fields.append(name_str)
+            restartFields.append(name_str)
 
         # Read restart data as a flat array of doubles
         data = np.fromfile(f, dtype=np.float64, count=nFields * nPoints)
@@ -606,7 +610,24 @@ def read_SU2_restart_binary(filename):
         # Reshape to 2D: each row is a point, each column is a field
         data = data.reshape((nPoints, nFields))
 
-    return fields, data
+    metric_dict = {'NumberVertices': nPoints}
+
+    if 'z' in restartFields:
+        metric_dict['Dim'] = 3
+        fieldsToRead = ['Metric_xx', 'Metric_xy', 'Metric_yy', 'Metric_xz', 'Metric_yz', 'Metric_zz']
+    else:
+        metric_dict['Dim'] = 2  
+        fieldsToRead = ['Metric_xx', 'Metric_xy', 'Metric_yy']
+
+    for field in fieldsToRead:
+
+        try:
+            ind_metric = restartFields.index(field)
+            metric_dict[field] = data[:, ind_metric]
+        except ValueError:
+            print('The metric field %s is missing!' % field)
+
+    return metric_dict
 
 
 def read_SU2_restart_ascii(filename):
@@ -625,19 +646,27 @@ def read_SU2_restart_ascii(filename):
     except:
         raise("The solution file must be in ASCII format!")
 
-    fields = line.lstrip('"').rstrip('"\n')
-    fields = fields.split('","')
+    restartFields = line.lstrip('"').rstrip('"\n')
+    restartFields = restartFields.split('","')
 
-    dim = 2
-    if "z" in fields:
-        dim = 3
+    data = np.genfromtxt(filename, delimiter=',', skip_header=1, dtype=np.float64)
+    nPoints = data.shape[0]
 
-    
-    data = np.empty((0, len(fields)))
-    with open(filename, 'r') as f:
-        for i, line in enumerate(f):
-            if i == 0:
-                continue
-            data = np.vstack((data, np.array(line.split(','), dtype=np.float64)))
+    metric_dict = {'NumberVertices': nPoints}
 
-    return fields, data
+    if 'z' in restartFields:
+        metric_dict['Dim'] = 3
+        fieldsToRead = ['Metric_xx', 'Metric_xy', 'Metric_yy', 'Metric_xz', 'Metric_yz', 'Metric_zz']
+    else:
+        metric_dict['Dim'] = 2  
+        fieldsToRead = ['Metric_xx', 'Metric_xy', 'Metric_yy']
+
+    for field in fieldsToRead:
+
+        try:
+            ind_metric = restartFields.index(field)
+            metric_dict[field] = data[:, ind_metric]
+        except ValueError:
+            print('The metric field %s is missing!' % field)
+
+    return metric_dict
