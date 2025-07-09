@@ -589,6 +589,7 @@ def read_SU2_restart_binary(filename):
             metric_dict[field] = data[:, ind_metric]
         except ValueError:
             print('The metric field %s is missing!' % field)
+            exit()
 
     return metric_dict
 
@@ -631,5 +632,6 @@ def read_SU2_restart_ascii(filename):
             metric_dict[field] = data[:, ind_metric]
         except ValueError:
             print('The metric field %s is missing!' % field)
+            exit()
 
     return metric_dict
