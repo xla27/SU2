@@ -211,31 +211,6 @@ class MeshSolConverter():
             metric_dict = read_SU2_restart_binary(su2_filename)
         elif '.csv' in su2_filename:
             metric_dict = read_SU2_restart_ascii(su2_filename) 
-
-        print(metric_dict['Metric_xx'])
-
-        # nPoints, nMetric = metric_data.shape
-
-        # if nMetric == 6:
-        #     dim = 3
-        # else:
-        #     dim = 2
-
-        # metric_dict['Dim'] = dim
-
-        # if dim == 2:
-        #     metric_dict ['Metric_xx'] = data[:,-3]
-        #     metric_dict ['Metric_xy'] = data[:,-2]
-        #     metric_dict ['Metric_yy'] = data[:,-1]
-        # elif dim == 3:
-        #     metric_dict ['Metric_xx'] = data[:,-6]
-        #     metric_dict ['Metric_xy'] = data[:,-5]
-        #     metric_dict ['Metric_yy'] = data[:,-4]
-        #     metric_dict ['Metric_xz'] = data[:,-3]
-        #     metric_dict ['Metric_yz'] = data[:,-2]
-        #     metric_dict ['Metric_zz'] = data[:,-1]      
-
-        # metric_dict['NumberVertices'] = data.shape[0]  
         
         self.SetMetricDict(metric_dict)
 
@@ -403,38 +378,26 @@ class MeshSolConverter():
         """ 
         Writes a .sol Medit file from given metric data. 
         """
-        metric = self.GetMetricDict()
+        metric_dict = self.GetMetricDict()
 
-        dim = metric['Dim']
-        numvert = metric['NumberVertices']
+        dim = metric_dict['Dim']
+        numvert = metric_dict['NumberVertices']
 
-        with open(medit_filename, "w") as f:
-            f.write("MeshVersionFormatted 2\n")
-            f.write("Dimension {}\n".format(dim))
-            f.write("SolAtVertices\n")
-            f.write("{}\n".format(numvert))
-            f.write("1 3\n")
+        header = 'MeshVersionFormatted 2\nDimension %i\nSolAtVertices\n%i\n1 3\n' % (dim , numvert)
+        footer = '\nEnd\n'
 
-            
-            # Write metric per node
-            if dim == 2:
-                for vert in range(numvert):
-                    met = [metric['Metric_xx'][vert],
-                           metric['Metric_xy'][vert],
-                           metric['Metric_yy'][vert],]
-                    f.write("{}\n".format(" ".join(map(str, met))))
+        sol_data = np.empty((numvert,0))
 
-            if dim == 3:
-                for vert in range(numvert):
-                    met = [metric['Metric_xx'][vert],
-                           metric['Metric_xy'][vert],
-                           metric['Metric_yy'][vert],
-                           metric['Metric_xz'][vert],
-                           metric['Metric_yz'][vert],
-                           metric['Metric_zz'][vert],]
-                    f.write("{}\n".format(" ".join(map(str, met))))
+        sol_data = np.hstack((sol_data, metric_dict['Metric_xx'][:,np.newaxis]))
+        sol_data = np.hstack((sol_data, metric_dict['Metric_xy'][:,np.newaxis]))
+        sol_data = np.hstack((sol_data, metric_dict['Metric_yy'][:,np.newaxis]))
 
-            f.write("\nEnd\n")
+        if dim == 3:
+            sol_data = np.hstack((sol_data, metric_dict['Metric_xz'][:,np.newaxis]))
+            sol_data = np.hstack((sol_data, metric_dict['Metric_yz'][:,np.newaxis]))
+            sol_data = np.hstack((sol_data, metric_dict['Metric_zz'][:,np.newaxis]))            
+
+        np.savetxt(medit_filename, sol_data, delimiter=' ', header=header, footer=footer, comments='')
         
         return
     
