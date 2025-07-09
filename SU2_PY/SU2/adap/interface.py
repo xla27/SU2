@@ -395,9 +395,9 @@ class MeshSolConverter():
         if dim == 3:
             sol_data = np.hstack((sol_data, metric_dict['Metric_xz'][:,np.newaxis]))
             sol_data = np.hstack((sol_data, metric_dict['Metric_yz'][:,np.newaxis]))
-            sol_data = np.hstack((sol_data, metric_dict['Metric_zz'][:,np.newaxis]))            
+            sol_data = np.hstack((sol_data, metric_dict['Metric_zz'][:,np.newaxis]))
 
-        np.savetxt(medit_filename, sol_data, delimiter=' ', header=header, footer=footer, comments='')
+        np.savetxt(medit_filename, sol_data, delimiter=' ', header=header, footer=footer, comments='', fmt='%1.5e')
         
         return
     
