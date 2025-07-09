@@ -1636,6 +1636,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     break;
     case SPECIES_MODEL::NONE: break;
   }
+
+  // Adaptation outputs
+  
 }
 
 void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){

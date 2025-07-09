@@ -305,17 +305,17 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   // Anisotropic metric
   if(config->GetCompute_Metric()) {
     if (nDim == 2){
-      AddVolumeOutput("GRADIENT_RHO_X", "Grad(Rho)_x", "GRADIENT_ADAPT", "x-component of the density gradient");
-      AddVolumeOutput("GRADIENT_RHO_Y", "Grad(Rho)_y", "GRADIENT_ADAPT", "y-component of the density gradient");
+      AddVolumeOutput("GRADIENT_SENSOR_X", "Grad(Sensor)_x", "GRADIENT_ADAPT", "x-component of the Sensor gradient");
+      AddVolumeOutput("GRADIENT_SENSOR_Y", "Grad(Sensor)_y", "GRADIENT_ADAPT", "y-component of the Sensor gradient");
 
       AddVolumeOutput("METRIC_XX", "Metric_xx", "METRIC", "x-x-component of the metric");
       AddVolumeOutput("METRIC_XY", "Metric_xy", "METRIC", "x-y-component of the metric");
       AddVolumeOutput("METRIC_YY", "Metric_yy", "METRIC", "y-y-component of the metric");
     }
     else{
-      AddVolumeOutput("GRADIENT_RHO_X", "Grad(Rho)_x", "GRADIENT_ADAPT", "x-component of the density gradient");
-      AddVolumeOutput("GRADIENT_RHO_Y", "Grad(Rho)_y", "GRADIENT_ADAPT", "y-component of the density gradient");
-      AddVolumeOutput("GRADIENT_RHO_Z", "Grad(Rho)_z", "GRADIENT_ADAPT", "z-component of the density gradient");
+      AddVolumeOutput("GRADIENT_SENSOR_X", "Grad(Sensor)_x", "GRADIENT_ADAPT", "x-component of the Sensor gradient");
+      AddVolumeOutput("GRADIENT_SENSOR_Y", "Grad(Sensor)_y", "GRADIENT_ADAPT", "y-component of the Sensor gradient");
+      AddVolumeOutput("GRADIENT_SENSOR_Z", "Grad(Sensor)_z", "GRADIENT_ADAPT", "z-component of the Sensor gradient");
 
       AddVolumeOutput("METRIC_XX", "Metric_xx", "METRIC", "x-x-component of the metric");
       AddVolumeOutput("METRIC_XY", "Metric_xy", "METRIC", "x-y-component of the metric");
@@ -408,17 +408,17 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if(config->GetCompute_Metric()) {
     if (nDim == 2){
-      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 0));
-      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 1));
+      SetVolumeOutputValue("GRADIENT_SENSOR_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 0));
+      SetVolumeOutputValue("GRADIENT_SENSOR_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 1));
 
       SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
       SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));
       SetVolumeOutputValue("METRIC_YY", iPoint, Node_Flow->GetMetric(iPoint, 2));
     }
     else{
-      SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 0));
-      SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 1));
-      SetVolumeOutputValue("GRADIENT_RHO_Z", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 2));
+      SetVolumeOutputValue("GRADIENT_SENSOR_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 0));
+      SetVolumeOutputValue("GRADIENT_SENSOR_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 1));
+      SetVolumeOutputValue("GRADIENT_SENSOR_Z", iPoint, Node_Flow->GetGradient_Adapt(iPoint, 0, 2));
 
       SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
       SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));

@@ -628,6 +628,11 @@ def read_SU2_restart_ascii(filename):
     fields = line.lstrip('"').rstrip('"\n')
     fields = fields.split('","')
 
+    dim = 2
+    if "z" in fields:
+        dim = 3
+
+    
     data = np.empty((0, len(fields)))
     with open(filename, 'r') as f:
         for i, line in enumerate(f):

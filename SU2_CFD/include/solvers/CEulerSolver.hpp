@@ -317,6 +317,10 @@ protected:
           else if (config->GetAdap_Sensor(iSensor) == "DENSITY") {
             aux = nodes->GetDensity(iPoint);
           }
+          else if (config->GetAdap_Sensor(iSensor) == "TOTALPRESSURE") {
+            const su2double Mach = nodes->GetVelocity2(iPoint)/nodes->GetSoundSpeed(iPoint);
+            aux = nodes->GetPressure(iPoint)*pow((1+0.2*Mach*Mach), 3.5);
+          }
           nodes->SetAuxVar_Adapt(iPoint, iSensor, aux);
         }
       }
