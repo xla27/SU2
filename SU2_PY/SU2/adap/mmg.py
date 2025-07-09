@@ -170,19 +170,21 @@ def mmg(config):
     #--- Only allow ASCII restarts for file conversion AGGIUNTA LETTURA BINARIO
     if not gol:
         if '.csv' in config.RESTART_FILENAME:
+            config_cfd.READ_BINARY_RESTART = 'NO'
             sol_ext_cfd = '.csv'
-            config.READ_BINARY_RESTART = 'YES'
-            config_cfd.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+            config_cfd.OUTPUT_FILES = ['RESTART_CSV','PARAVIEW','SURFACE_PARAVIEW']
         else:
             sol_ext_cfd = '.dat'
             config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
 
     if gol:
         if '.csv' in config.RESTART_FILENAME:
+            config_cfd.READ_BINARY_RESTART = 'NO'
             sol_ext_cfd = '.csv'
-            config_cfd.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+            config_cfd.OUTPUT_FILES = ['RESTART_CSV','PARAVIEW','SURFACE_PARAVIEW']
+            config_cfd_ad.READ_BINARY_RESTART = 'NO'
             sol_ext_cfd_ad = '.csv'
-            config_cfd_ad.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']   
+            config_cfd_ad.OUTPUT_FILES = ['RESTART_CSV','PARAVIEW','SURFACE_PARAVIEW']   
         else:
             sol_ext_cfd = '.dat'
             config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
@@ -199,10 +201,6 @@ def mmg(config):
             config_cfd.RESTART_CFL = 'NO'
 
         with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
-
-        if restart:
-            os.remove(solfil)
-            os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), solfil)
 
         #--- Set RESTART_SOL=YES for runs after adaptation
         if not nemo and sol_ext_cfd != '.csv':     # SU2 does not interpolate ASCII files for restarts
