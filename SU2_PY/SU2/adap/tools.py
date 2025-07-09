@@ -165,7 +165,7 @@ def set_flow_config_ini(config, cur_solfil, sensor_tags, mesh_size):
         config.VOLUME_OUTPUT  = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL'
         config.COMPUTE_METRIC = 'NO'
     else:
-        config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL, METRIC'
+        config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL, METRIC, GRADIENT_ADAPT'
         config.COMPUTE_METRIC  = 'YES'
         config.ADAP_COMPLEXITY = int(mesh_size)
 
