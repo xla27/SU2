@@ -123,6 +123,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Centered schemes only need gradients for viscous fluxes (T and v, but we need also to include P). ---*/
   nPrimVarGrad = nDim + (centered ? 2 : 4);
 
+  /*--- Auxiliary gradients for adaptation. ---*/
+  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
+
   /*--- Initialize nVarGrad for deallocation ---*/
 
   nVarGrad = nPrimVarGrad;
