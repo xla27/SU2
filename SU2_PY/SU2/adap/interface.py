@@ -314,7 +314,7 @@ class MeshSolConverter():
 
             f.write("NPOIN= {}\n".format(len(vertices)))
             for i, node in enumerate(vertices):
-                f.write("{}\n".format(" ".join(map(str, node))))
+                f.write("{} {}\n".format(" ".join(map(str, node)), i))
 
             f.write("NMARK= {}\n".format(len(boundaries)))
             for medit_tag in boundaries.keys():
