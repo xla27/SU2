@@ -309,8 +309,8 @@ class MeshSolConverter():
             f.write("NDIME= {}\n".format(dim))
 
             f.write("NELEM= {}\n".format(len(elements)))
-            for elem in elements:
-                f.write("{} {}\n".format(elem_type, " ".join(map(str, elem))))
+            for i, elem in enumerate(elements):
+                f.write("{} {}\n".format(elem_type, " ".join(map(str, elem)), i))
 
             f.write("NPOIN= {}\n".format(len(vertices)))
             for i, node in enumerate(vertices):
