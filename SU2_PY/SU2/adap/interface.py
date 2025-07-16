@@ -237,6 +237,8 @@ class MeshSolConverter():
                 self.SetDim(dim)
 
             elif line.startswith("Vertices"):
+                print(line)
+                print(lines[i+1])
                 n_vert = int(lines[i+1])
                 if dim == 2:
                     for j in range(n_vert):
@@ -246,15 +248,17 @@ class MeshSolConverter():
                     for j in range(n_vert):
                         x, y, z, id_dom = lines[i + 2 + j].split()
                         vertices.append([float(x), float(y), float(z)])
+                    
                 i += n_vert  # Move index past nodes
 
             elif (line.startswith("Triangles") and dim == 2) or (line.startswith("Tetrahedra") and dim == 3):
                 n_elements = int(lines[i+1])
+                elements = [None]*n_elements
                 for j in range(n_elements):
                     elem_data = list(map(int, lines[i + 2 + j].split()))
                     elem_data = [elem-1 for elem in elem_data]
-                    elements.append(elem_data[:-1])  # Last column is a region marker
-                i += n_elements  # Move index past elements
+                    elements[j] = elem_data[:-1]  # Last column is a region marker
+                i += n_elements  # Move index past elements             
 
             elif (line.startswith("Edges") and dim == 2) or (line.startswith("Triangles") and dim == 3):
                 # These define boundary markers
@@ -269,6 +273,35 @@ class MeshSolConverter():
                 i += n_faces  # Move index past boundary elements
 
             i += 1
+
+        print("Checking for surplus points")
+
+        PointIDs = np.array(range(n_vert), dtype=int)
+        elements = np.array(elements, dtype=int)
+        isIn = np.isin(PointIDs, elements)
+        whichAreSurplusPoints = np.where(isIn == False)[0]
+        
+        if (len(whichAreSurplusPoints) > 0):
+            print("There are surplus points in mesh file for unknown reasons.")
+            print("Surplus points:", whichAreSurplusPoints)
+            print("Deleting it and then fix connectivity...")
+            SubtractIDs = np.zeros((n_vert, ), dtype=int)
+            for iPoint in whichAreSurplusPoints:
+                IDsOver = np.where(PointIDs > iPoint)[0]
+                SubtractIDs[IDsOver] += 1
+            
+            # Now I can just fix the connectivity
+            elements -= SubtractIDs[elements]
+            for marker in boundaries.keys():
+                markerData = np.array(boundaries[marker], dtype=int)
+                markerData -= SubtractIDs[markerData]
+                boundaries[marker] = markerData
+
+            
+            whichAreSurplusPointsReverse = np.sort(whichAreSurplusPoints)[::-1]
+            for iPoint in whichAreSurplusPointsReverse:
+                # Remove from the list of vertices but in reverse order
+                vertices.pop(iPoint)
 
         mesh_dict = {'Dim': dim, 'Vertices': vertices}
         if dim == 2:
