@@ -133,7 +133,7 @@ def main():
     
     # Run Mesh Adaptation
     mesh_adaptation ( options.filename   ,
-                      options.partitions, options.runCFD )
+                      options.partitions, options.runcfd )
 
 #: def main()
 
