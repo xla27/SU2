@@ -31,7 +31,7 @@ from .. import io as su2io
 from .. import adap as su2adap
 from ..run.interface import CFD as SU2_CFD
 
-def mmg(config):
+def mmg(config, runCFD = True):
     """
     Runs the a mesh adaptation loop with the MMG library.
 
@@ -305,50 +305,52 @@ def mmg(config):
             #--- Print mesh sizes
             su2adap.print_adap_table(iSiz, mesh_sizes, iSub, nSub, mesh_new)
 
-            dir = f'./ite{global_iter}'
-            os.makedirs(os.path.join('..',dir))
-            os.chdir(os.path.join('..',dir))
+            if runCFD:
 
-            meshfil = config_cfd['MESH_FILENAME']
-            solfil_ini  = f'restart_flow{sol_ext_cfd}'
+                dir = f'./ite{global_iter}'
+                os.makedirs(os.path.join('..',dir))
+                os.chdir(os.path.join('..',dir))
 
-            fileconverter.WriteMeshSU2(meshfil)
+                meshfil = config_cfd['MESH_FILENAME']
+                solfil_ini  = f'restart_flow{sol_ext_cfd}'
 
-            del mesh_new
+                fileconverter.WriteMeshSU2(meshfil)
 
-            #--- Run su2
+                del mesh_new
 
-            # link to restart if restart file is binary
-            if sol_ext_cfd != '.csv':
-                os.symlink(os.path.join(f'../ite{global_iter-1}', config.RESTART_FILENAME), solfil_ini)
+                #--- Run su2
 
-            try: # run with redirected outputs
+                # link to restart if restart file is binary
+                if sol_ext_cfd != '.csv':
+                    os.symlink(os.path.join(f'../ite{global_iter-1}', config.RESTART_FILENAME), solfil_ini)
 
-                su2adap.update_flow_config(config_cfd, meshfil, solfil, solfil_ini,
-                                          flow_iter[iSiz], flow_cfl[iSiz], adap_sensors, mesh_size)
+                try: # run with redirected outputs
 
-                with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
+                    su2adap.update_flow_config(config_cfd, meshfil, solfil, solfil_ini,
+                                            flow_iter[iSiz], flow_cfl[iSiz], adap_sensors, mesh_size)
 
-                if not os.path.exists(solfil) :
-                    raise RuntimeError('SU2_CFD failed.\n')
+                    with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
 
-                #--- Print convergence history
+                    if not os.path.exists(solfil) :
+                        raise RuntimeError('SU2_CFD failed.\n')
 
-                npoin = su2adap.get_su2_npoin(meshfil)
-                su2adap.plot_results(history_format, history_filename, global_iter, npoin)
+                    #--- Print convergence history
 
-                if gol:
+                    npoin = su2adap.get_su2_npoin(meshfil)
+                    su2adap.plot_results(history_format, history_filename, global_iter, npoin)
 
-                    su2adap.update_adj_config(config_cfd_ad, meshfil, solfil, adjsolfil,
-                                             adjsolfil_ini, adj_iter[iSiz], mesh_size)
+                    if gol:
 
-                    with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd_ad)
+                        su2adap.update_adj_config(config_cfd_ad, meshfil, solfil, adjsolfil,
+                                                adjsolfil_ini, adj_iter[iSiz], mesh_size)
 
-                    if not os.path.exists(su2io.add_suffix(adjsolfil, suffix)) :
-                        raise RuntimeError('SU2_CFD_AD failed.\n')
+                        with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd_ad)
 
-            except:
-                raise
+                        if not os.path.exists(su2io.add_suffix(adjsolfil, suffix)) :
+                            raise RuntimeError('SU2_CFD_AD failed.\n')
+
+                except:
+                    raise
 
             del fileconverter
 
