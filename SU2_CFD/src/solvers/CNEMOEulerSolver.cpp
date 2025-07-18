@@ -54,6 +54,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  const bool compute_metric = config-> GetCompute_Metric();
 
   int Unst_RestartIter = 0;
 
@@ -107,7 +108,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   nPrimVarGrad = nSpecies + nDim + 8;
   // Verify what does it mean nDim+3 in case of gaol oriented metric, since it is probably wrong
   // since it is probably wrong in NEMO
-  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
+  if (compute_metric)  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
 
 
   /*--- Initialize nVarGrad for deallocation ---*/

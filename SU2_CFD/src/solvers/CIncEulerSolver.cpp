@@ -57,6 +57,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   const bool centered = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
+  const bool compute_metric = config-> GetCompute_Metric();
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -124,7 +125,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   nPrimVarGrad = nDim + (centered ? 2 : 4);
 
   /*--- Auxiliary gradients for adaptation. ---*/
-  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
+  if (compute_metric) nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
 
   /*--- Initialize nVarGrad for deallocation ---*/
 

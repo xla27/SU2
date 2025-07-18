@@ -65,6 +65,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   const bool centered = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
+  const bool compute_metric = config-> GetCompute_Metric();
 
   int Unst_RestartIter = 0;
   unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
@@ -123,7 +124,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   nPrimVarGrad = nDim + (centered && !config->GetContinuous_Adjoint() ? 1 : 4);
   nSecondaryVar = nSecVar;
   nSecondaryVarGrad = 2;
-  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
+  if (compute_metric) nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
