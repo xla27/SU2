@@ -3041,6 +3041,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_HAUSD");
 
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_TOLL");
+
   /* END_CONFIG_OPTIONS */
 
 }
