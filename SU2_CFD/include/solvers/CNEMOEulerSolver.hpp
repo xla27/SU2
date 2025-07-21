@@ -109,7 +109,7 @@ protected:
       for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
         for (auto iSensor = 0; iSensor < nAdapSensor; iSensor++) {
           if (config->GetAdap_Sensor(iSensor) == "MACH") {
-            aux = nodes->GetVelocity2(iPoint)/nodes->GetSoundSpeed(iPoint);
+            aux = sqrt(nodes->GetVelocity2(iPoint))/nodes->GetSoundSpeed(iPoint);
           }
           else if (config->GetAdap_Sensor(iSensor) == "PRESSURE") {
             aux = nodes->GetPressure(iPoint);

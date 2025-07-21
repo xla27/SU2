@@ -303,7 +303,7 @@ protected:
       for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
         for (auto iSensor = 0; iSensor < nAdapSensor; iSensor++) {
           if (config->GetAdap_Sensor(iSensor) == "MACH") {
-            aux = nodes->GetVelocity2(iPoint)/nodes->GetSoundSpeed(iPoint);
+            aux = sqrt(nodes->GetVelocity2(iPoint))/nodes->GetSoundSpeed(iPoint);
           }
           else if (config->GetAdap_Sensor(iSensor) == "PRESSURE") {
             aux = nodes->GetPressure(iPoint);
@@ -318,7 +318,7 @@ protected:
             aux = nodes->GetDensity(iPoint);
           }
           else if (config->GetAdap_Sensor(iSensor) == "TOTALPRESSURE") {
-            const su2double Mach = nodes->GetVelocity2(iPoint)/nodes->GetSoundSpeed(iPoint);
+            const su2double Mach = sqrt(nodes->GetVelocity2(iPoint))/nodes->GetSoundSpeed(iPoint);
             aux = nodes->GetPressure(iPoint)*pow((1+0.2*Mach*Mach), 3.5);
           }
           nodes->SetAuxVar_Adapt(iPoint, iSensor, aux);
