@@ -163,7 +163,7 @@ def set_flow_config_ini(config, cur_solfil, sensor_tags, mesh_size):
         config.VOLUME_OUTPUT  = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL'
         config.COMPUTE_METRIC = 'NO'
     else:
-        config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL, METRIC'
+        config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL, METRIC, GRADIENT_ADAPT'
         config.COMPUTE_METRIC  = 'YES'
         config.ADAP_COMPLEXITY = int(mesh_size)
 
@@ -178,7 +178,6 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
     config.COMPUTE_METRIC       = 'YES'
     config.ADAP_COMPLEXITY      = int(mesh_size)
-    #config.RESTART_CFL          = 'YES'
 
 def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_iter, flow_cfl, sensor_tags, mesh_size):
     """Set primal config for current solution"""

@@ -35,8 +35,8 @@ import numpy as np
 # ------------------------------------------------------------
 MMG_RUN = os.environ["MMG_RUN"]
 sys.path.append(MMG_RUN)
-command_mmg2D = 'mmg2d_O3'
-command_mmg3D = 'mmg3d_O3'
+command_mmg2D = MMG_RUN+'/mmg2d_O3'
+command_mmg3D = MMG_RUN+'/mmg3d_O3'
 
 # ------------------------------------------------------------
 #  SU2-MMG Interface Functions
@@ -208,30 +208,9 @@ class MeshSolConverter():
         metric_dict = {}
 
         if '.dat' in su2_filename:
-            fieldnames, data = read_SU2_restart_binary(su2_filename)
+            metric_dict = read_SU2_restart_binary(su2_filename)
         elif '.csv' in su2_filename:
-            fieldnames, data = read_SU2_restart_ascii(su2_filename) 
-
-        if "z" in fieldnames:
-            dim = 3
-        else:
-            dim = 2
-
-        metric_dict['Dim'] = dim
-
-        if dim == 2:
-            metric_dict ['Metric_xx'] = data[:,-3]
-            metric_dict ['Metric_xy'] = data[:,-2]
-            metric_dict ['Metric_yy'] = data[:,-1]
-        elif dim == 3:
-            metric_dict ['Metric_xx'] = data[:,-6]
-            metric_dict ['Metric_xy'] = data[:,-5]
-            metric_dict ['Metric_yy'] = data[:,-4]
-            metric_dict ['Metric_xz'] = data[:,-3]
-            metric_dict ['Metric_yz'] = data[:,-2]
-            metric_dict ['Metric_zz'] = data[:,-1]      
-
-        metric_dict['NumberVertices'] = data.shape[0]  
+            metric_dict = read_SU2_restart_ascii(su2_filename) 
         
         self.SetMetricDict(metric_dict)
 
@@ -330,12 +309,12 @@ class MeshSolConverter():
             f.write("NDIME= {}\n".format(dim))
 
             f.write("NELEM= {}\n".format(len(elements)))
-            for elem in elements:
-                f.write("{} {}\n".format(elem_type, " ".join(map(str, elem))))
+            for i, elem in enumerate(elements):
+                f.write("{} {} {}\n".format(elem_type, " ".join(map(str, elem)), i))
 
             f.write("NPOIN= {}\n".format(len(vertices)))
             for i, node in enumerate(vertices):
-                f.write("{}\n".format(" ".join(map(str, node))))
+                f.write("{} {}\n".format(" ".join(map(str, node)), i))
 
             f.write("NMARK= {}\n".format(len(boundaries)))
             for medit_tag in boundaries.keys():
@@ -399,38 +378,26 @@ class MeshSolConverter():
         """ 
         Writes a .sol Medit file from given metric data. 
         """
-        metric = self.GetMetricDict()
+        metric_dict = self.GetMetricDict()
 
-        dim = metric['Dim']
-        numvert = metric['NumberVertices']
+        dim = metric_dict['Dim']
+        numvert = metric_dict['NumberVertices']
 
-        with open(medit_filename, "w") as f:
-            f.write("MeshVersionFormatted 2\n")
-            f.write("Dimension {}\n".format(dim))
-            f.write("SolAtVertices\n")
-            f.write("{}\n".format(numvert))
-            f.write("1 3\n")
+        header = 'MeshVersionFormatted 2\nDimension %i\nSolAtVertices\n%i\n1 3\n' % (dim , numvert)
+        footer = '\nEnd\n'
 
-            
-            # Write metric per node
-            if dim == 2:
-                for vert in range(numvert):
-                    met = [metric['Metric_xx'][vert],
-                           metric['Metric_xy'][vert],
-                           metric['Metric_yy'][vert],]
-                    f.write("{}\n".format(" ".join(map(str, met))))
+        sol_data = np.empty((numvert,0))
 
-            if dim == 3:
-                for vert in range(numvert):
-                    met = [metric['Metric_xx'][vert],
-                           metric['Metric_xy'][vert],
-                           metric['Metric_yy'][vert],
-                           metric['Metric_xz'][vert],
-                           metric['Metric_yz'][vert],
-                           metric['Metric_zz'][vert],]
-                    f.write("{}\n".format(" ".join(map(str, met))))
+        sol_data = np.hstack((sol_data, metric_dict['Metric_xx'][:,np.newaxis]))
+        sol_data = np.hstack((sol_data, metric_dict['Metric_xy'][:,np.newaxis]))
+        sol_data = np.hstack((sol_data, metric_dict['Metric_yy'][:,np.newaxis]))
 
-            f.write("\nEnd\n")
+        if dim == 3:
+            sol_data = np.hstack((sol_data, metric_dict['Metric_xz'][:,np.newaxis]))
+            sol_data = np.hstack((sol_data, metric_dict['Metric_yz'][:,np.newaxis]))
+            sol_data = np.hstack((sol_data, metric_dict['Metric_zz'][:,np.newaxis]))            
+
+        np.savetxt(medit_filename, sol_data, delimiter=' ', header=header, footer=footer, comments='', fmt='%1.5e')
         
         return
     
@@ -576,8 +543,7 @@ def read_SU2_restart_binary(filename):
 
     Note that the Point_ID column is implicit in the ordering
     """
-    #filename += ".dat"
-    fields = ["Point_ID"]  # Initialize with Point_ID as SU2 convention
+    restartFields = []
 
     with open(filename, 'rb') as f:
         # Read 5 integers (magic number + metadata)
@@ -595,7 +561,7 @@ def read_SU2_restart_binary(filename):
         for _ in range(nFields):
             name_bytes = f.read(CGNS_STRING_SIZE)
             name_str = name_bytes.decode('utf-8').strip('\x00').strip()
-            fields.append(name_str)
+            restartFields.append(name_str)
 
         # Read restart data as a flat array of doubles
         data = np.fromfile(f, dtype=np.float64, count=nFields * nPoints)
@@ -606,7 +572,25 @@ def read_SU2_restart_binary(filename):
         # Reshape to 2D: each row is a point, each column is a field
         data = data.reshape((nPoints, nFields))
 
-    return fields, data
+    metric_dict = {'NumberVertices': nPoints}
+
+    if 'z' in restartFields:
+        metric_dict['Dim'] = 3
+        fieldsToRead = ['Metric_xx', 'Metric_xy', 'Metric_yy', 'Metric_xz', 'Metric_yz', 'Metric_zz']
+    else:
+        metric_dict['Dim'] = 2  
+        fieldsToRead = ['Metric_xx', 'Metric_xy', 'Metric_yy']
+
+    for field in fieldsToRead:
+
+        try:
+            ind_metric = restartFields.index(field)
+            metric_dict[field] = data[:, ind_metric]
+        except ValueError:
+            print('The metric field %s is missing!' % field)
+            exit()
+
+    return metric_dict
 
 
 def read_SU2_restart_ascii(filename):
@@ -625,14 +609,28 @@ def read_SU2_restart_ascii(filename):
     except:
         raise("The solution file must be in ASCII format!")
 
-    fields = line.lstrip('"').rstrip('"\n')
-    fields = fields.split('","')
+    restartFields = line.lstrip('"').rstrip('"\n')
+    restartFields = restartFields.split('","')
 
-    data = np.empty((0, len(fields)))
-    with open(filename, 'r') as f:
-        for i, line in enumerate(f):
-            if i == 0:
-                continue
-            data = np.vstack((data, np.array(line.split(','), dtype=np.float64)))
+    data = np.genfromtxt(filename, delimiter=',', skip_header=1, dtype=np.float64)
+    nPoints = data.shape[0]
 
-    return fields, data
+    metric_dict = {'NumberVertices': nPoints}
+
+    if 'z' in restartFields:
+        metric_dict['Dim'] = 3
+        fieldsToRead = ['Metric_xx', 'Metric_xy', 'Metric_yy', 'Metric_xz', 'Metric_yz', 'Metric_zz']
+    else:
+        metric_dict['Dim'] = 2  
+        fieldsToRead = ['Metric_xx', 'Metric_xy', 'Metric_yy']
+
+    for field in fieldsToRead:
+
+        try:
+            ind_metric = restartFields.index(field)
+            metric_dict[field] = data[:, ind_metric]
+        except ValueError:
+            print('The metric field %s is missing!' % field)
+            exit()
+
+    return metric_dict

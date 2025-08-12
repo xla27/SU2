@@ -119,6 +119,10 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Make sure to align the sizes with the constructor of CIncEulerVariable. ---*/
   nVar = nDim+2; nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
 
+ /*--- Auxiliary gradients for adaptation. ---*/
+
+  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
+
   /*--- Initialize nVarGrad for deallocation ---*/
 
   nVarGrad = nPrimVarGrad;

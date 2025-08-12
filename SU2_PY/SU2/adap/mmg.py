@@ -78,7 +78,7 @@ def mmg(config):
     flow_cfl  = su2adap.get_flow_cfl(config)
 
     adap_sensors = su2adap.get_adap_sensors(config)
-    sensor_avail = ['GOAL', 'MACH', 'PRESSURE', 'TEMPERATURE', 'ENERGY', 'DENSITY']
+    sensor_avail = ['GOAL', 'MACH', 'PRESSURE', 'TEMPERATURE', 'ENERGY', 'DENSITY', 'TOTAL_PRESSURE']
 
     for sensor in adap_sensors:
         if sensor not in sensor_avail:
@@ -90,13 +90,30 @@ def mmg(config):
 
     warn = True
     base_dir = os.getcwd()
-    adap_dir = './adap'
+    adap_dir = './adap'    
+    flow_dir = './Flows'
+    surfflow_dir = './Flows_surf'
 
     if os.path.exists(adap_dir):
         print('./adap exists. Removing old mesh adaptation in 10s.')
         if warn : time.sleep(10)
         shutil.rmtree(adap_dir)
         print(f'The {adap_dir} folder was deleted.')
+
+    if os.path.exists(flow_dir):
+        print(flow_dir+' exists. Removing old Flows in 10s.')
+        shutil.rmtree(flow_dir)
+        print(f'The {flow_dir} folder was deleted.')
+
+    if os.path.exists(surfflow_dir):
+        print(surfflow_dir+' exists. Removing old Surface Flows in 10s.')
+        shutil.rmtree(surfflow_dir)
+        print(f'The {surfflow_dir} folder was deleted.')
+
+    os.makedirs(flow_dir)
+    os.makedirs(surfflow_dir)
+    su2adap.run_command(f'ln -s ../adap/ite{0}/'+config.VOLUME_FILENAME+'.vtu ./Flows/'+config.VOLUME_FILENAME+'_'+str(0).zfill(5)+'.vtu')
+    su2adap.run_command(f'ln -s ../adap/ite{0}/'+config.SURFACE_FILENAME+'.vtu ./Flows_surf/'+config.SURFACE_FILENAME+'_'+str(0).zfill(5)+'.vtu')
 
     dir = f'{adap_dir}/ite0'
     os.makedirs(dir)
@@ -153,19 +170,21 @@ def mmg(config):
     #--- Only allow ASCII restarts for file conversion AGGIUNTA LETTURA BINARIO
     if not gol:
         if '.csv' in config.RESTART_FILENAME:
+            config_cfd.READ_BINARY_RESTART = 'NO'
             sol_ext_cfd = '.csv'
-            config.READ_BINARY_RESTART = 'YES'
-            config_cfd.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+            config_cfd.OUTPUT_FILES = ['RESTART_CSV','PARAVIEW','SURFACE_PARAVIEW']
         else:
             sol_ext_cfd = '.dat'
             config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
 
     if gol:
         if '.csv' in config.RESTART_FILENAME:
+            config_cfd.READ_BINARY_RESTART = 'NO'
             sol_ext_cfd = '.csv'
-            config_cfd.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']
+            config_cfd.OUTPUT_FILES = ['RESTART_CSV','PARAVIEW','SURFACE_PARAVIEW']
+            config_cfd_ad.READ_BINARY_RESTART = 'NO'
             sol_ext_cfd_ad = '.csv'
-            config_cfd_ad.OUTPUT_FILES = ['RESTART_ASCII','PARAVIEW','SURFACE_PARAVIEW']   
+            config_cfd_ad.OUTPUT_FILES = ['RESTART_CSV','PARAVIEW','SURFACE_PARAVIEW'] 
         else:
             sol_ext_cfd = '.dat'
             config_cfd.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
@@ -179,18 +198,14 @@ def mmg(config):
         #--- Run a single iteration of the flow if restarting to get history info
         if restart:
             config_cfd.ITER = 1
-            config_cfd.RESTART_CFL = 'YES'
+            config_cfd.RESTART_CFL = 'NO'
 
         with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
-
-        if restart:
-            os.remove(solfil)
-            os.symlink(os.path.join(base_dir, config.SOLUTION_FILENAME), solfil)
 
         #--- Set RESTART_SOL=YES for runs after adaptation
         if not nemo and sol_ext_cfd != '.csv':     # SU2 does not interpolate ASCII files for restarts
             config_cfd.RESTART_SOL = 'YES' 
-            config_cfd.RESTART_CFL = 'YES'
+            config_cfd.RESTART_CFL = 'NO'
 
         if gol:
             adjsolfil = f'restart_adj{sol_ext_cfd_ad}'
@@ -252,6 +267,9 @@ def mmg(config):
         for iSub in range(nSub):
 
             global_iter += 1
+
+            os.symlink(f'../adap/ite{global_iter}/'+config_cfd.VOLUME_FILENAME+'.vtu', '../../Flows/'+config_cfd.VOLUME_FILENAME+'_'+str(global_iter).zfill(5)+'.vtu')
+            os.symlink(f'../adap/ite{global_iter}/'+config_cfd.SURFACE_FILENAME+'.vtu', '../../Flows_surf/'+config_cfd.SURFACE_FILENAME+'_'+str(global_iter).zfill(5)+'.vtu')
 
             mesh_size = int(mesh_sizes[iSiz])
             if iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])

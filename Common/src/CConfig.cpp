@@ -5608,7 +5608,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Checks for mesh adaptation ---*/
   if (Compute_Metric) {
     /*--- Check that sensor is valid ---*/
-    vector<string> Sensor_Avail{"GOAL", "MACH", "PRESSURE", "TEMPERATURE", "ENERGY", "DENSITY"};
+    vector<string> Sensor_Avail{"GOAL", "MACH", "PRESSURE", "TEMPERATURE", "ENERGY", "DENSITY", "TOTALPRESSURE"};
     for (auto iSensor = 0; iSensor < nAdap_Sensor; iSensor++) {
       if (find(begin(Sensor_Avail), end(Sensor_Avail), Adap_Sensor[iSensor]) != end(Sensor_Avail)) {
         /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
@@ -5619,18 +5619,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           if (!DiscreteAdjoint)
             SU2_MPI::Error("Adaptation sensor GOAL can only be computed for MATH_PROBLEM = DISCRETE_ADJOINT.", CURRENT_FUNCTION);
         }
-        if (nemo) {
-          if (Adap_Sensor[iSensor] == "GOAL")
-            SU2_MPI::Error("Adaptation sensor GOAL is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
-
-          if (Adap_Sensor[iSensor] == "TEMPERATURE")
-            SU2_MPI::Error("Adaptation sensor TEMPERATURE is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
-
-          if (Adap_Sensor[iSensor] == "ENERGY")
-            SU2_MPI::Error("Adaptation sensor ENERGY is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
-
-          if (Adap_Sensor[iSensor] == "DENSITY")
-            SU2_MPI::Error("Adaptation sensor DENSITY is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
+        if (Kind_Solver == MAIN_SOLVER::NEMO_EULER || Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) {
+          if (Adap_Sensor[iSensor] == "GOAL" || Adap_Sensor[iSensor] == "TEMPERATURE" ||
+              Adap_Sensor[iSensor] == "ENERGY" || Adap_Sensor[iSensor] == "DENSITY")
+            SU2_MPI::Error(string("Adaptation sensor ") + Adap_Sensor[iSensor] + string(" not available for NEMO problems."), CURRENT_FUNCTION);
+        }
+        if (Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
+          if (Adap_Sensor[iSensor] == "GOAL" || Adap_Sensor[iSensor] == "ENERGY")
+            SU2_MPI::Error(string("Adaptation sensor ") + Adap_Sensor[iSensor] + string(" not available for INC problems."), CURRENT_FUNCTION);
         }
       }
       else {
