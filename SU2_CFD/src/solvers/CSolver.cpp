@@ -2280,11 +2280,39 @@ void CSolver::SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, con
 
 void CSolver::SetGradient_AuxVar_Adapt_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
 
+  //--- communicate the solution values via MPI
+  MPI_QUANTITIES commSol = config->GetGoal_Oriented_Metric()? MPI_QUANTITIES::SOLUTION : MPI_QUANTITIES::AUXVAR_ADAPT;
+  InitiateComms(geometry, config, commSol);
+  CompleteComms(geometry, config, commSol);
+
   const auto& solution = base_nodes->GetAuxVar_Adapt();
-  auto& gradient = base_nodes->GetGradient_AuxVar_Adapt();
+  auto& gradient = base_nodes->GetGradient_Adapt();
 
   computeGradientsGreenGauss(this, MPI_QUANTITIES::AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
                              *config, solution, 0, nAuxGradAdap, -1, gradient);
+
+}
+
+void CSolver::SetGradient_AuxVar_Adapt_LS(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+
+  //--- communicate the solution values via MPI
+  MPI_QUANTITIES commSol = config->GetGoal_Oriented_Metric()? MPI_QUANTITIES::SOLUTION : MPI_QUANTITIES::AUXVAR_ADAPT;
+  InitiateComms(geometry, config, commSol);
+  CompleteComms(geometry, config, commSol);
+
+  /*--- Set a flag for unweighted or weighted least-squares. ---*/
+  bool weighted;
+  PERIODIC_QUANTITIES commPer;
+
+  weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+  commPer = weighted? PERIODIC_SOL_LS : PERIODIC_SOL_ULS;
+
+  const auto& solution = base_nodes->GetAuxVar_Adapt();
+  auto& rmatrix = base_nodes->GetRmatrix();
+  auto& gradient = base_nodes->GetGradient_Adapt();
+
+  computeGradientsLeastSquares(this, MPI_QUANTITIES::AUXVAR_GRADIENT_ADAPT, commPer, *geometry, 
+                             *config, weighted, solution, 0, nAuxGradAdap, -1, gradient, rmatrix);
 
 }
 

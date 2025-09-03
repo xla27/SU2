@@ -321,26 +321,27 @@ bool CSinglezoneDriver::GetTimeConvergence() const{
 void CSinglezoneDriver::ComputeMetric() {
 
   auto solver = solver_container[ZONE_0][INST_0][MESH_0];
-  auto solver_flow = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
+  auto solver_flow = solver[FLOW_SOL];
+  auto solver_turb = solver[TURB_SOL];
   auto geometry = geometry_container[ZONE_0][INST_0][MESH_0];
   auto config = config_container[ZONE_0];
 
+  const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+
   if (rank == MASTER_NODE){
-    cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
+    cout << endl <<"----------------------------- Compute sensor gradients ----------------------------" << endl;
     cout << "Storing primitive variables needed for gradients in metric." << endl;
   }
   solver_flow->SetAuxVar_Adapt(geometry, config, solver_flow->GetNodes());
 
-  if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
-    if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
-    solver_flow->SetHessian_GG(geometry, config, -1, RUNTIME_FLOW_SYS);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    if(rank == MASTER_NODE) cout << "Computing gradients using Green-Gauss." << endl;
+    solver_flow->SetGradient_AuxVar_Adapt_GG(geometry, config, RUNTIME_FLOW_SYS);
+    if (turb) solver_turb->SetGradient_AuxVar_Adapt_GG(geometry, config, RUNTIME_TURB_SYS);
   }
   else {
-    if(rank == MASTER_NODE) cout << "Computing Hessians using L2 projection." << endl;
-    solver_flow->SetHessian_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
+    if(rank == MASTER_NODE) cout << "Computing gradients using least squares." << endl;
+    solver_flow->SetGradient_AuxVar_Adapt_LS(geometry, config, RUNTIME_FLOW_SYS);
+    if (turb) solver_turb->SetGradient_AuxVar_Adapt_LS(geometry, config, RUNTIME_TURB_SYS);
   }
-
-  //--- Metric
-  if(rank == MASTER_NODE) cout << "Computing feature-based metric tensor." << endl;
-  solver_flow->ComputeMetric(solver, geometry, config);
 }
