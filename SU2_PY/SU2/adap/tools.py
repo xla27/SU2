@@ -37,6 +37,22 @@ def get_mesh_sizes(config):
     """Get prescribed mesh complexities, i.e. desired mesh sizes"""
     return config['ADAP_SIZES'].strip('()').split(',')
 
+def get_mesh_hmaxs(config):
+    """Get prescribed mesh hmax, i.e. desired maximum element sizes"""
+    return config['ADAP_HMAXS'].strip('()').split(',')
+
+def get_mesh_hmins(config):
+    """Get prescribed mesh hmin, i.e. desired minimum element sizes"""
+    return config['ADAP_HMINS'].strip('()').split(',')
+
+def get_mesh_armaxs(config):
+    """Get prescribed mesh aspect ratio"""
+    return config['ADAP_ARMAXS'].strip('()').split(',')
+
+def get_mesh_norms(config):
+    """Get prescribed mesh Lp norms"""
+    return config['ADAP_NORMS'].strip('()').split(',')
+
 def get_mesh_size(mesh):
     """Get mesh size info from a python mesh structure"""
     elts = {'xy':'Vertices', 'xyz':'Vertices', 'Tetrahedra':'Tetrahedra', 'Triangles':'Triangles', 'Edges':'Edges'}
@@ -49,47 +65,10 @@ def get_mesh_size(mesh):
 
     return nelts
 
-def get_mmg_config(config_su2, dim):
-    """Load parameters from the SU2 config file into the AMG config dict"""
-    config_mmg = dict()
-
-    if 'ADAP_HGRAD' in config_su2: config_mmg['hgrad'] = float(config_su2['ADAP_HGRAD'])
-
-    config_mmg['dim']         = int(dim)
-    config_mmg['hmax']        = float(config_su2['ADAP_HMAX'])
-    config_mmg['hmin']        = float(config_su2['ADAP_HMIN'])
-    config_mmg['Lp']          = float(config_su2['ADAP_NORM'])
-    config_mmg['mmg_log']     = 'mmg.out'
-    config_mmg['mmg_err']     = 'mmg.err'
-
-    if '(' in config_su2['ADAP_HAUSD']:
-        config_mmg['hausd'] = {}
-        parameters = config_su2['ADAP_HAUSD'].lstrip('(').rstrip(')').split(',')
-
-        if len(parameters) % 2:
-            raise KeyError('Missing values in ADAP_HAUSD!')
-        else:
-            for i_par in range(0, len(parameters), 2):
-                config_mmg['hausd'][parameters[i_par].strip(' ')] = float(parameters[i_par+1])
-    else:
-        config_mmg['hausd'] = float(config_su2['ADAP_HAUSD'])
-    
-    return config_mmg
 
 def get_sub_iterations(config):
     """Get number of adaptation iterations for each mesh complexity"""
     return config['ADAP_SUBITER'].strip('()').split(',')
-
-def get_residual_reduction(config):
-    """Get residual reduction for each complexity level"""
-    if 'ADAP_RESIDUAL_REDUCTION' in config:
-        return config['ADAP_RESIDUAL_REDUCTION'].strip('()').split(',')
-    else:
-        nRes = len(config['ADAP_SIZES'].strip('()').split(','))
-        res = []
-        for i in range(nRes):
-            res.append(config['RESIDUAL_REDUCTION'])
-        return res
 
 def get_adj_iter(config):
     """Get number of adjoint solver iterations for each mesh complexity"""
@@ -154,22 +133,43 @@ def get_adap_sensors(config):
     """Get adaptation sensors"""
     return config['ADAP_SENSOR'].replace(' ','').strip('()').split(',')
 
-def set_flow_config_ini(config, cur_solfil, sensor_tags, mesh_size):
+def get_pyadap_options(config):
+    """Get pyadap options"""
+    pyadap_dict = {}
+    pyadap_dict['ADAP_SIZES'] = get_mesh_sizes(config)
+    pyadap_dict['ADAP_SUBITER'] = get_sub_iterations(config)
+    pyadap_dict['ADAP_HMAXS'] = get_mesh_hmaxs(config)
+    pyadap_dict['ADAP_HMINS'] = get_mesh_hmins(config)
+    pyadap_dict['ADAP_NORMS'] = get_mesh_norms(config)
+    pyadap_dict['ADAP_ARMAXS'] = get_mesh_armaxs(config)
+    pyadap_dict['ADAP_ADJ_ITER'] = get_adj_iter(config)
+    pyadap_dict['ADAP_FLOW_ITER'] = get_flow_iter(config)
+    pyadap_dict['ADAP_FLOW_CFL'] = get_flow_cfl(config)
+    pyadap_dict['ADAP_ADJ_CFL'] = get_adj_cfl(config)
+    pyadap_dict['ADAP_SENSOR'] = get_adap_sensors(config)
+
+    return pyadap_dict
+
+def set_flow_config_ini(config, cur_solfil, pyadap_dict):
     """Set primal config for initial solution"""
     config.CONV_FILENAME       = 'history'
     config.RESTART_FILENAME    = cur_solfil
     config.HISTORY_OUTPUT      = ['ITER', 'RMS_RES', 'AERO_COEFF', 'FLOW_COEFF', 'CFL_NUMBER']
     config.MATH_PROBLEM        = 'DIRECT'
     config.WRT_RESTART_COMPACT = 'NO'
-    if 'GOAL' in sensor_tags:
+    if 'GOAL' in pyadap_dict['ADAP_SENSOR']:
         config.VOLUME_OUTPUT  = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL'
         config.COMPUTE_METRIC = 'NO'
     else:
         config.VOLUME_OUTPUT   = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, AUXILIARY, RESIDUAL, METRIC, GRADIENT_ADAPT'
         config.COMPUTE_METRIC  = 'YES'
-        config.ADAP_COMPLEXITY = int(mesh_size)
+        config.ADAP_COMPLEXITY = int(pyadap_dict['ADAP_SIZES'][0])
+        config.ADAP_HMAX       = float(pyadap_dict['ADAP_HMAXS'][0])
+        config.ADAP_HMIN       = float(pyadap_dict['ADAP_HMINS'][0])
+        config.ADAP_NORM       = float(pyadap_dict['ADAP_NORMS'][0])
+        config.ADAP_ARMAX      = float(pyadap_dict['ADAP_ARMAXS'][0])
 
-def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
+def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, pyadap_dict):
     """Set adjoint config for initial solution"""
     config.CONV_FILENAME        = 'history_adj'
     config.RESTART_ADJ_FILENAME = cur_solfil_adj
@@ -180,28 +180,73 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, mesh_size):
     config.VOLUME_OUTPUT        = 'COORDINATES, SOLUTION, PRIMITIVE, CFL_NUMBER, RESIDUAL, METRIC'
     config.HISTORY_OUTPUT       = ['ITER', 'RMS_RES', 'SENSITIVITY']
     config.COMPUTE_METRIC       = 'YES'
-    config.ADAP_COMPLEXITY      = int(mesh_size)
+    config.ADAP_COMPLEXITY = int(pyadap_dict['ADAP_SIZES'][0])
+    config.ADAP_HMAX       = float(pyadap_dict['ADAP_HMAXS'][0])
+    config.ADAP_HMIN       = float(pyadap_dict['ADAP_HMINS'][0])
+    config.ADAP_NORM       = float(pyadap_dict['ADAP_NORMS'][0])
+    config.ADAP_ARMAX      = float(pyadap_dict['ADAP_ARMAXS'][0])
 
-def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, flow_iter, flow_cfl, sensor_tags, mesh_size):
+
+def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, pyadap_dict, iter):
     """Set primal config for current solution"""
     config.MESH_FILENAME     = cur_meshfil
     config.SOLUTION_FILENAME = cur_solfil_ini
     config.RESTART_FILENAME  = cur_solfil
-    config.ITER              = int(flow_iter)
-    if 'GOAL' not in sensor_tags:
-        config.ADAP_COMPLEXITY   = int(mesh_size)
+    config.ITER              = int(pyadap_dict['ADAP_FLOW_ITER'][iter])
+    if 'GOAL' not in pyadap_dict['ADAP_SENSOR']:
+        config.ADAP_COMPLEXITY = int(pyadap_dict['ADAP_SIZES'][iter])
+        config.ADAP_HMAX       = float(pyadap_dict['ADAP_HMAXS'][iter])
+        config.ADAP_HMIN       = float(pyadap_dict['ADAP_HMINS'][iter])
+        config.ADAP_NORM       = float(pyadap_dict['ADAP_NORMS'][iter])
+        config.ADAP_ARMAX      = float(pyadap_dict['ADAP_ARMAXS'][iter])  
 
-    set_cfl(config, flow_cfl)
+    set_cfl(config, float(pyadap_dict['ADAP_FLOW_CFL'][iter]))
 
-def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfil_adj_ini, adj_iter, mesh_size):
+def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfil_adj_ini, pyadap_dict, iter):
     """Set adjoint config for current solution"""
     config.MESH_FILENAME         = cur_meshfil
     config.RESTART_ADJ_FILENAME  = cur_solfil_adj
     config.SOLUTION_ADJ_FILENAME = cur_solfil_adj_ini
     config.SOLUTION_FILENAME     = cur_solfil
     config.RESTART_FILENAME      = cur_solfil
-    config.ITER                  = int(adj_iter)
-    config.ADAP_COMPLEXITY       = int(mesh_size)
+    config.ITER                  = int(pyadap_dict['ADAP_ADJ_ITER'][iter])
+    config.ADAP_COMPLEXITY = int(pyadap_dict['ADAP_SIZES'][iter])
+    config.ADAP_HMAX       = float(pyadap_dict['ADAP_HMAXS'][iter])
+    config.ADAP_HMIN       = float(pyadap_dict['ADAP_HMINS'][iter])
+    config.ADAP_NORM       = float(pyadap_dict['ADAP_NORMS'][iter])
+    config.ADAP_ARMAX      = float(pyadap_dict['ADAP_ARMAXS'][iter])  
+
+def set_mmg_config(config_su2, dim):
+    """Load parameters from the SU2 config file into the AMG config dict"""
+    config_mmg = dict()
+
+    if 'ADAP_HGRAD' in config_su2: config_mmg['hgrad'] = float(config_su2['ADAP_HGRAD'])
+
+    config_mmg['dim']     = int(dim)
+    config_mmg['hmax']    = float(get_mesh_hmaxs(config_su2)[0])
+    config_mmg['hmin']    = float(get_mesh_hmins(config_su2)[0])
+    config_mmg['mmg_log'] = 'mmg.out'
+    config_mmg['mmg_err'] = 'mmg.err'
+
+    if '(' in config_su2['ADAP_HAUSD']:
+        config_mmg['hausd'] = {}
+        parameters = config_su2['ADAP_HAUSD'].lstrip('(').rstrip(')').split(',')
+
+        if len(parameters) % 2:
+            raise KeyError('Missing values in ADAP_HAUSD!')
+        else:
+            for i_par in range(0, len(parameters), 2):
+                config_mmg['hausd'][parameters[i_par].strip(' ')] = float(parameters[i_par+1])
+    else:
+        config_mmg['hausd'] = float(config_su2['ADAP_HAUSD'])
+    
+    return config_mmg
+
+
+def update_mmg_config(config_mmg, pyadap_dict, iter):
+
+    config_mmg['hmax'] = float(pyadap_dict['ADAP_HMAXS'][iter])
+    config_mmg['hmin'] = float(pyadap_dict['ADAP_HMINS'][iter])
 
 def print_adap_options(config):
     """Print options used for mesh adaptation"""
@@ -346,9 +391,11 @@ def create_sensor(solution, sensor_tags):
 
     return sensor_wrap
 
-def print_adap_table(iter, sizes, subiter, nsubiter, mesh):
+def print_adap_table(iter, subiter, pyadap_dict, mesh):
     """Print adapted mesh sizes to a table"""
     dim = mesh['Dim']
+    sizes = pyadap_dict['ADAP_SIZES']
+    nsubiter = int(pyadap_dict['ADAP_SUBITER'][iter])
 
     #--- Header
     if iter == 0 and subiter == 0:

@@ -3018,6 +3018,18 @@ void CConfig::SetConfig_Options() {
   addPythonOption("ADAP_SIZES");
 
   /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_HMAXS");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_HMINS");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_NORMS");
+
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_ARMAXS");
+
+  /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_SUBITER");
 
   /* DESCRIPTION: A mesh adaptation option */

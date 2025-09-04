@@ -42,8 +42,9 @@ def mmg(config, runCFD = True):
     #--- Check config options related to mesh adaptation
 
     pyadap_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_HGRAD', 'ADAP_RESIDUAL_REDUCTION', 
-                      'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER', 'ADAP_CFL', 'ADAP_HAUSD' ]
-    required_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'ADAP_HMAX', 'ADAP_HMIN', 'MESH_FILENAME', 
+                      'ADAP_FLOW_ITER', 'ADAP_ADJ_ITER', 'ADAP_CFL', 'ADAP_HAUSD', 'ADAP_HMAXS', 
+                      'ADAP_HMINS', 'ADAP_NORMS', 'ADAP_ARMAXS' ]
+    required_options = [ 'ADAP_SIZES', 'ADAP_SUBITER', 'MESH_FILENAME', 
                         'RESTART_SOL', 'MESH_OUT_FILENAME' ]
 
     if not all (opt in config for opt in required_options):
@@ -63,28 +64,20 @@ def mmg(config, runCFD = True):
 
     print(su2adap.print_adap_options(config))
 
-    #--- Target mesh sizes and subiterations at each size
+    #--- Extracting ADAP options and check for sensors
 
-    mesh_sizes = su2adap.get_mesh_sizes(config)
-    sub_iter   = su2adap.get_sub_iterations(config)
+    pyadap_dict = su2adap.get_pyadap_options(config) 
 
-    if len(mesh_sizes) != len(sub_iter):
-        raise ValueError(f'Inconsistent number of mesh sizes and sub-iterations. {len(mesh_sizes)} mesh sizes and {len(sub_iter)} sub-iterations provided.')
+    if len(pyadap_dict['ADAP_SIZES']) != len(pyadap_dict['ADAP_SUBITER']):
+        raise ValueError(f'Inconsistent number of mesh sizes and sub-iterations. {len(pyadap_dict['ADAP_SIZES'])} mesh sizes and {len(pyadap_dict['ADAP_SUBITER'])} sub-iterations provided.')
 
-    #--- Solver iterations/ residual reduction param for each size level
-
-    flow_iter = su2adap.get_flow_iter(config)
-    adj_iter  = su2adap.get_adj_iter(config)
-    flow_cfl  = su2adap.get_flow_cfl(config)
-
-    adap_sensors = su2adap.get_adap_sensors(config)
     sensor_avail = ['GOAL', 'MACH', 'PRESSURE', 'TEMPERATURE', 'ENERGY', 'DENSITY', 'TOTALPRESSURE']
 
-    for sensor in adap_sensors:
+    for sensor in pyadap_dict['ADAP_SENSOR']:
         if sensor not in sensor_avail:
             raise ValueError(f'Unknown adaptation sensor {sensor}. Available options are {sensor_avail}.')
 
-    gol = 'GOAL' in adap_sensors
+    gol = 'GOAL' in pyadap_dict['ADAP_SENSOR']
 
     #--- Change current directory
 
@@ -138,7 +131,7 @@ def mmg(config, runCFD = True):
 
     #--- MMG parameters
 
-    config_mmg = su2adap.get_mmg_config(config, dim)
+    config_mmg = su2adap.set_mmg_config(config, dim)
 
     #--- Compute initial solution if needed, else link current files
 
@@ -167,7 +160,7 @@ def mmg(config, runCFD = True):
     else:
         print('\nRunning initial CFD solution.')
 
-    #--- Only allow ASCII restarts for file conversion AGGIUNTA LETTURA BINARIO
+    #--- Setting up initial flow config
     if not gol:
         if '.csv' in config.RESTART_FILENAME:
             config_cfd.READ_BINARY_RESTART = 'NO'
@@ -192,7 +185,7 @@ def mmg(config, runCFD = True):
             config_cfd_ad.OUTPUT_FILES = ['RESTART','PARAVIEW','SURFACE_PARAVIEW']
 
     solfil  = f'restart_flow{sol_ext_cfd}'
-    su2adap.set_flow_config_ini(config_cfd, solfil, adap_sensors, mesh_sizes[0])
+    su2adap.set_flow_config_ini(config_cfd, solfil, pyadap_dict)
 
     try: # run with redirected outputs
         #--- Run a single iteration of the flow if restarting to get history info
@@ -209,7 +202,7 @@ def mmg(config, runCFD = True):
 
         if gol:
             adjsolfil = f'restart_adj{sol_ext_cfd_ad}'
-            su2adap.set_adj_config_ini(config_cfd_ad, solfil, adjsolfil, mesh_sizes[0])
+            su2adap.set_adj_config_ini(config_cfd_ad, solfil, adjsolfil, pyadap_dict)
 
             #--- If restarting, check for the existence of an adjoint restart
             if restart:
@@ -261,19 +254,16 @@ def mmg(config, runCFD = True):
 
     print('\nStarting mesh adaptation process.\n')
 
-    nSiz = len(mesh_sizes)
+    nSiz = len(pyadap_dict['ADAP_SIZES'])
     for iSiz in range(nSiz):
-        nSub = int(sub_iter[iSiz])
+        nSub = int(pyadap_dict['ADAP_SUBITER'][iSiz])
+        su2adap.update_mmg_config(config_mmg, pyadap_dict, iSiz)
         for iSub in range(nSub):
             
             global_iter += 1
 
             os.symlink(f'../adap/ite{global_iter}/'+config_cfd.VOLUME_FILENAME+'.vtu', '../../Flows/'+config_cfd.VOLUME_FILENAME+'_'+str(global_iter).zfill(5)+'.vtu')
             os.symlink(f'../adap/ite{global_iter}/'+config_cfd.SURFACE_FILENAME+'.vtu', '../../Flows_surf/'+config_cfd.SURFACE_FILENAME+'_'+str(global_iter).zfill(5)+'.vtu')
-
-            mesh_size = int(mesh_sizes[iSiz])
-            if iSub == nSub-1 and iSiz != nSiz-1: mesh_size = int(mesh_sizes[iSiz+1])
-            config_mmg['size'] = mesh_size
 
             #--- Instantiating the mesh converter
             fileconverter = su2adap.MeshSolConverter()
@@ -303,7 +293,7 @@ def mmg(config, runCFD = True):
             fileconverter.WriteMeshSU2(meshout.replace('.mesh','.su2'))
 
             #--- Print mesh sizes
-            su2adap.print_adap_table(iSiz, mesh_sizes, iSub, nSub, mesh_new)
+            su2adap.print_adap_table(iSiz, iSub, pyadap_dict, mesh_new)
 
             if runCFD:
 
@@ -326,8 +316,7 @@ def mmg(config, runCFD = True):
 
                 try: # run with redirected outputs
 
-                    su2adap.update_flow_config(config_cfd, meshfil, solfil, solfil_ini,
-                                            flow_iter[iSiz], flow_cfl[iSiz], adap_sensors, mesh_size)
+                    su2adap.update_flow_config(config_cfd, meshfil, solfil, solfil_ini, pyadap_dict, iSiz)
 
                     with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
 
@@ -342,7 +331,7 @@ def mmg(config, runCFD = True):
                     if gol:
 
                         su2adap.update_adj_config(config_cfd_ad, meshfil, solfil, adjsolfil,
-                                                adjsolfil_ini, adj_iter[iSiz], mesh_size)
+                                                adjsolfil_ini, pyadap_dict, iSiz)
 
                         with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd_ad)
 
