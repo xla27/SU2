@@ -39,19 +39,55 @@ def get_mesh_sizes(config):
 
 def get_mesh_hmaxs(config):
     """Get prescribed mesh hmax, i.e. desired maximum element sizes"""
-    return config['ADAP_HMAXS'].strip('()').split(',')
+    if 'ADAP_HMAXS' in config:
+        return config['ADAP_HMAXS'].strip('()').split(',')
+    elif 'ADAP_HMAX' in config:
+        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(','))
+        hmaxs = []
+        for i in range(nExt_iter):
+            hmaxs.append(config['ADAP_HMAX'])
+        return hmaxs
+    else:
+        raise KeyError('Either ADAP_HMAX or ADAP_HMAXS needs to be specified')
 
 def get_mesh_hmins(config):
     """Get prescribed mesh hmin, i.e. desired minimum element sizes"""
-    return config['ADAP_HMINS'].strip('()').split(',')
+    if 'ADAP_HMINS' in config:
+        return config['ADAP_HMINS'].strip('()').split(',')
+    elif 'ADAP_HMIN' in config:
+        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(','))
+        hmins = []
+        for i in range(nExt_iter):
+            hmins.append(config['ADAP_HMIN'])
+        return hmins
+    else:
+        raise KeyError('Either ADAP_HMIN or ADAP_HMINS needs to be specified')
 
 def get_mesh_armaxs(config):
     """Get prescribed mesh aspect ratio"""
-    return config['ADAP_ARMAXS'].strip('()').split(',')
+    if 'ADAP_ARMAXS' in config:
+        return config['ADAP_ARMAXS'].strip('()').split(',')
+    elif 'ADAP_ARMAX' in config:
+        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(','))
+        armaxs = []
+        for i in range(nExt_iter):
+            armaxs.append(config['ADAP_ARMAX'])
+        return armaxs
+    else:
+        raise KeyError('Either ADAP_ARMAX or ADAP_ARMAXS needs to be specified')
 
 def get_mesh_norms(config):
     """Get prescribed mesh Lp norms"""
-    return config['ADAP_NORMS'].strip('()').split(',')
+    if 'ADAP_NORMS' in config:
+        return config['ADAP_NORMS'].strip('()').split(',')
+    elif 'ADAP_NORM' in config:
+        nExt_iter = len(config['ADAP_NORMS'].strip('()').split(','))
+        norms = []
+        for i in range(nExt_iter):
+            norms.append(config['ADAP_NORM'])
+        return norms
+    else:
+        raise KeyError('Either ADAP_NORM or ADAP_NORMS needs to be specified')
 
 def get_mesh_size(mesh):
     """Get mesh size info from a python mesh structure"""
