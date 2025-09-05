@@ -81,7 +81,7 @@ def get_mesh_norms(config):
     if 'ADAP_NORMS' in config:
         return config['ADAP_NORMS'].strip('()').split(',')
     elif 'ADAP_NORM' in config:
-        nExt_iter = len(config['ADAP_NORMS'].strip('()').split(','))
+        nExt_iter = len(config['ADAP_SIZES'].strip('()').split(','))
         norms = []
         for i in range(nExt_iter):
             norms.append(config['ADAP_NORM'])
