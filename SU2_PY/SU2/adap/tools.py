@@ -225,7 +225,7 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, pyadap_dict):
 
 def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, pyadap_dict, iter, subiter):
     """Set primal config for current solution"""
-    if subiter == int(pyadap_dict['ADAP_SUBITER'][iter])-1 and iter < len(pyadap_dict['ADAP_SIZES']):
+    if subiter == int(pyadap_dict['ADAP_SUBITER'][iter])-1 and iter < len(pyadap_dict['ADAP_SIZES'])-1:
         iter += 1
     else:
         iter = iter
@@ -244,7 +244,7 @@ def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, pyadap_d
 
 def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfil_adj_ini, pyadap_dict, iter, subiter):
     """Set adjoint config for current solution"""
-    if subiter == int(pyadap_dict['ADAP_SUBITER'][iter])-1 and iter < len(pyadap_dict['ADAP_SIZES']):
+    if subiter == int(pyadap_dict['ADAP_SUBITER'][iter])-1 and iter < len(pyadap_dict['ADAP_SIZES'])-1:
         iter += 1
     else:
         iter = iter
