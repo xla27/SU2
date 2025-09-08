@@ -316,7 +316,7 @@ def mmg(config, runCFD = True):
 
                 try: # run with redirected outputs
 
-                    su2adap.update_flow_config(config_cfd, meshfil, solfil, solfil_ini, pyadap_dict, iSiz)
+                    su2adap.update_flow_config(config_cfd, meshfil, solfil, solfil_ini, pyadap_dict, iSiz, iSub)
 
                     with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd)
 
@@ -331,7 +331,7 @@ def mmg(config, runCFD = True):
                     if gol:
 
                         su2adap.update_adj_config(config_cfd_ad, meshfil, solfil, adjsolfil,
-                                                adjsolfil_ini, pyadap_dict, iSiz)
+                                                adjsolfil_ini, pyadap_dict, iSiz, iSub)
 
                         with su2io.redirect.output('su2.out'): SU2_CFD(config_cfd_ad)
 

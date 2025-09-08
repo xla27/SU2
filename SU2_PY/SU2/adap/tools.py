@@ -223,8 +223,12 @@ def set_adj_config_ini(config, cur_solfil, cur_solfil_adj, pyadap_dict):
     config.ADAP_ARMAX      = float(pyadap_dict['ADAP_ARMAXS'][0])
 
 
-def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, pyadap_dict, iter):
+def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, pyadap_dict, iter, subiter):
     """Set primal config for current solution"""
+    if subiter == int(pyadap_dict['ADAP_SUBITER'][iter])-1 and iter < len(pyadap_dict['ADAP_SIZES']):
+        iter += 1
+    else:
+        iter = iter
     config.MESH_FILENAME     = cur_meshfil
     config.SOLUTION_FILENAME = cur_solfil_ini
     config.RESTART_FILENAME  = cur_solfil
@@ -238,8 +242,12 @@ def update_flow_config(config, cur_meshfil, cur_solfil, cur_solfil_ini, pyadap_d
 
     set_cfl(config, float(pyadap_dict['ADAP_FLOW_CFL'][iter]))
 
-def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfil_adj_ini, pyadap_dict, iter):
+def update_adj_config(config, cur_meshfil, cur_solfil, cur_solfil_adj, cur_solfil_adj_ini, pyadap_dict, iter, subiter):
     """Set adjoint config for current solution"""
+    if subiter == int(pyadap_dict['ADAP_SUBITER'][iter])-1 and iter < len(pyadap_dict['ADAP_SIZES']):
+        iter += 1
+    else:
+        iter = iter
     config.MESH_FILENAME         = cur_meshfil
     config.RESTART_ADJ_FILENAME  = cur_solfil_adj
     config.SOLUTION_ADJ_FILENAME = cur_solfil_adj_ini
