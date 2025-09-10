@@ -37,6 +37,23 @@
  * \author E. van der Weide, T. Economon
  */
 class CUserDefinedSolution final : public CVerificationSolution {
+  
+  protected:
+    /*--- Variables that define the solution and MMS source term. ---*/
+    su2double Density;     /*!< \brief Density, must be constant. */
+    su2double Temperature; /*!< \brief Temperature, just to be safe. */
+
+    /*--- Constants, which describe this manufactured solution. This is a
+    solution where the primitive variables vary as a combination
+    of sine and cosine functions. The solution is from Salari K, and
+    Knupp P, "Code verification by the method of manufactured solutions,"
+    SAND 2000-1444, Sandia National Laboratories, Albuquerque, NM, 2000. ---*/
+
+    su2double P_0;     /*!< \brief Parameter for the pressure solution. */
+    su2double u_0;     /*!< \brief Parameter for the x-velocity solution. */
+    su2double v_0;     /*!< \brief Parameter for the y-velocity solution. */
+    su2double epsilon; /*!< \brief Parameter for the velocity solutions. */
+
  public:
   /*!
    * \brief Constructor of the class.
