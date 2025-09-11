@@ -115,14 +115,16 @@ protected:
             aux = nodes->GetPressure(iPoint);
           }
           else if (config->GetAdap_Sensor(iSensor) == "TEMPERATURE") {
-            if (rank == MASTER_NODE){
-              cout << endl <<"TEMPERATURE metric not implemented for NEMO yet" << endl;
-            }
+            aux = nodes->GetTemperature(iPoint);
+          }
+          else if (config->GetAdap_Sensor(iSensor) == "TEMPERATURE_VE") {
+            aux = nodes->GetTemperature(iPoint);
           }
           else if (config->GetAdap_Sensor(iSensor) == "ENERGY") {
-            if (rank == MASTER_NODE){
-              cout << endl <<"ENERGY metric not implemented for NEMO yet" << endl;
-            }
+            aux = nodes->GetEnergy(iPoint);
+          }
+          else if (config->GetAdap_Sensor(iSensor) == "ENERGY_VE") {
+            aux = *nodes->GetEve(iPoint);
           }
           else if (config->GetAdap_Sensor(iSensor) == "DENSITY") {
             if (rank == MASTER_NODE){

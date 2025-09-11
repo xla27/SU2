@@ -5712,7 +5712,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Checks for mesh adaptation ---*/
   if (Compute_Metric) {
     /*--- Check that sensor is valid ---*/
-    vector<string> Sensor_Avail{"GOAL", "MACH", "PRESSURE", "TEMPERATURE", "ENERGY", "DENSITY", "TOTALPRESSURE"};
+    vector<string> Sensor_Avail{"GOAL", "MACH", "PRESSURE", "TEMPERATURE", "TEMPERATURE_VE", "ENERGY", "ENERGY_VE", "DENSITY", "TOTALPRESSURE"};
     for (auto iSensor = 0; iSensor < nAdap_Sensor; iSensor++) {
       if (find(begin(Sensor_Avail), end(Sensor_Avail), Adap_Sensor[iSensor]) != end(Sensor_Avail)) {
         /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
@@ -5724,9 +5724,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
             SU2_MPI::Error("Adaptation sensor GOAL can only be computed for MATH_PROBLEM = DISCRETE_ADJOINT.", CURRENT_FUNCTION);
         }
         if (Kind_Solver == MAIN_SOLVER::NEMO_EULER || Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) {
-          if (Adap_Sensor[iSensor] == "GOAL" || Adap_Sensor[iSensor] == "TEMPERATURE" ||
-              Adap_Sensor[iSensor] == "ENERGY" || Adap_Sensor[iSensor] == "DENSITY")
+          if (Adap_Sensor[iSensor] == "GOAL" || Adap_Sensor[iSensor] == "DENSITY")
             SU2_MPI::Error(string("Adaptation sensor ") + Adap_Sensor[iSensor] + string(" not available for NEMO problems."), CURRENT_FUNCTION);
+        }
+        if (Kind_Solver != MAIN_SOLVER::NEMO_EULER || Kind_Solver != MAIN_SOLVER::NEMO_NAVIER_STOKES) {
+          if (Adap_Sensor[iSensor] == "TEMPERATURE_VE" || Adap_Sensor[iSensor] == "ENERGY_VE")
+            SU2_MPI::Error(string("Adaptation sensor ") + Adap_Sensor[iSensor] + string(" not available for non-NEMO problems."), CURRENT_FUNCTION);
         }
         if (Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
           if (Adap_Sensor[iSensor] == "GOAL" || Adap_Sensor[iSensor] == "ENERGY")
@@ -5734,7 +5737,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         }
       }
       else {
-        SU2_MPI::Error(string("Invalid adaptation sensor: ") + Adap_Sensor[iSensor] + string("; must be GOAL, MACH, PRESSURE, ENERGY, DENSITY, TEMPERATURE, TOTALPRESSURE"), CURRENT_FUNCTION);
+        SU2_MPI::Error(string("Invalid adaptation sensor: ") + Adap_Sensor[iSensor] + string("; must be GOAL, MACH, PRESSURE, ENERGY, ENERGY_VE, DENSITY, TEMPERATURE, TEMPERATURE_VE, TOTALPRESSURE"), CURRENT_FUNCTION);
       }
     }
   }
