@@ -118,7 +118,7 @@ protected:
             aux = nodes->GetTemperature(iPoint);
           }
           else if (config->GetAdap_Sensor(iSensor) == "TEMPERATURE_VE") {
-            aux = nodes->GetTemperature(iPoint);
+            aux = nodes->GetTemperature_ve(iPoint);
           }
           else if (config->GetAdap_Sensor(iSensor) == "ENERGY") {
             aux = nodes->GetEnergy(iPoint);
