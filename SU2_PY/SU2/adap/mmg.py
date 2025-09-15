@@ -71,7 +71,7 @@ def mmg(config, runCFD = True):
     if len(pyadap_dict['ADAP_SIZES']) != len(pyadap_dict['ADAP_SUBITER']):
         raise ValueError(f'Inconsistent number of mesh sizes and sub-iterations. {len(pyadap_dict['ADAP_SIZES'])} mesh sizes and {len(pyadap_dict['ADAP_SUBITER'])} sub-iterations provided.')
 
-    sensor_avail = ['GOAL', 'MACH', 'PRESSURE', 'TEMPERATURE', 'ENERGY', 'DENSITY', 'TOTALPRESSURE']
+    sensor_avail = ['GOAL', 'MACH', 'PRESSURE', 'TEMPERATURE', 'TEMPERATURE_VE', 'ENERGY', 'ENERGY_VE', 'DENSITY', 'TOTALPRESSURE']
 
     for sensor in pyadap_dict['ADAP_SENSOR']:
         if sensor not in sensor_avail:
