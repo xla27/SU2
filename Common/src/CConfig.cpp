@@ -5727,7 +5727,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           if (Adap_Sensor[iSensor] == "GOAL" || Adap_Sensor[iSensor] == "DENSITY")
             SU2_MPI::Error(string("Adaptation sensor ") + Adap_Sensor[iSensor] + string(" not available for NEMO problems."), CURRENT_FUNCTION);
         }
-        if (Kind_Solver != MAIN_SOLVER::NEMO_EULER || Kind_Solver != MAIN_SOLVER::NEMO_NAVIER_STOKES) {
+        if (Kind_Solver != MAIN_SOLVER::NEMO_EULER && Kind_Solver != MAIN_SOLVER::NEMO_NAVIER_STOKES) {
           if (Adap_Sensor[iSensor] == "TEMPERATURE_VE" || Adap_Sensor[iSensor] == "ENERGY_VE")
             SU2_MPI::Error(string("Adaptation sensor ") + Adap_Sensor[iSensor] + string(" not available for non-NEMO problems."), CURRENT_FUNCTION);
         }
