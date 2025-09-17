@@ -610,8 +610,13 @@ def read_medit_mesh_binary(mesh, meshFilename, verbose=False):
             elements = [[te-1 for te in tet[:-1]] for tet in tetrahedra]
 
         # Corners
-        elif gmfKwdCod[kwdCod] == 'GmfCorners':
-            nc, corners = readField(f, 1, gmfKwdCod[kwdCod][3:])
+        elif (gmfKwdCod[kwdCod] == 'GmfCorners'          or 
+              gmfKwdCod[kwdCod] == 'GmfRequiredVertices' or
+              gmfKwdCod[kwdCod] == 'GmfRequiredEdges'    or
+              gmfKwdCod[kwdCod] == 'GmfRidges'           or
+              gmfKwdCod[kwdCod] == 'GmfRequiredTriangles'):
+            _, _ = readField(f, 1, gmfKwdCod[kwdCod][3:])
+
 
         # End
         elif gmfKwdCod[kwdCod] == 'GmfEnd':
