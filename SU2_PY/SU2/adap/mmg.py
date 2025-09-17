@@ -31,7 +31,7 @@ from .. import io as su2io
 from .. import adap as su2adap
 from ..run.interface import CFD as SU2_CFD
 
-def mmg(config, runCFD = True):
+def mmg(config, meditformat, runCFD = True):
     """
     Runs the a mesh adaptation loop with the MMG library.
 
@@ -53,6 +53,12 @@ def mmg(config, runCFD = True):
             if not opt in config:
                 err += opt + '\n'
         raise AttributeError(err)
+    
+    #--- Medit format
+    if meditformat:
+        medit_ext = '.meshb'
+    else:
+        medit_ext = '.mesh'
     
     #--- NEMO solver check
     if 'NEMO' in config.SOLVER:
@@ -270,7 +276,7 @@ def mmg(config, runCFD = True):
 
             #--- Load and read .su2 mesh and dump .mesh file
 
-            fileconverter.SU2ToMeditMesh(meshfil, meshfil.replace('.su2', '.mesh'))
+            fileconverter.SU2ToMeditMesh(meshfil, meshfil.replace('.su2', medit_ext))
 
             #--- Load and read .csv solution and dump .sol file
 
@@ -281,8 +287,8 @@ def mmg(config, runCFD = True):
             fileconverter.WriteParamFile(config_mmg, meshfil.rstrip('.su2'))
 
             #--- Adapt mesh with MMG
-            meshin = config_cfd['MESH_FILENAME'].replace('.su2','.mesh')
-            meshout = config_cfd['MESH_OUT_FILENAME'].replace('.su2','.mesh')
+            meshin = config_cfd['MESH_FILENAME'].replace('.su2', medit_ext)
+            meshout = config_cfd['MESH_OUT_FILENAME'].replace('.su2', medit_ext)
 
             solfile = config_cfd['RESTART_FILENAME'].replace(sol_ext_cfd,'.sol')
             su2adap.call_mmg(meshin, meshout, solfile, config_mmg)
@@ -290,10 +296,10 @@ def mmg(config, runCFD = True):
             mesh_new = fileconverter.ReadMeshMedit(meshout)
 
             #--- Dumping a copy of the adapted mesh 
-            fileconverter.WriteMeshSU2(meshout.replace('.mesh','.su2'))
+            fileconverter.WriteMeshSU2(meshout.replace(medit_ext,'.su2'))
 
             #--- Print mesh sizes
-            su2adap.print_adap_table(iSiz, iSub, pyadap_dict, mesh_new)
+            su2adap.print_adap_table(iSiz, iSub, pyadap_dict, mesh_new.GetMeshDict())
 
             if runCFD:
 
@@ -346,7 +352,7 @@ def mmg(config, runCFD = True):
     #--- Write final files
 
     fileconverter = su2adap.MeshSolConverter()
-    fileconverter.SU2ToMeditMesh(meshfil, meshfil.replace('.su2', '.mesh'))
+    fileconverter.SU2ToMeditMesh(meshfil, meshfil.replace('.su2', medit_ext))
 
     os.rename(solfil, os.path.join(base_dir, config.RESTART_FILENAME))
     os.rename(meshfil, os.path.join(base_dir, config.MESH_OUT_FILENAME))

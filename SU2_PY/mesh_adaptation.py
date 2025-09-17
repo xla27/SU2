@@ -41,12 +41,15 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=0,
                       help="number of PARTITIONS", metavar="PARTITIONS")
+    parser.add_option("-b", "--binary", dest="meditformat", default=1,
+                      help="Medit mesh format (binary = 1, ascii = 0)", metavar="MEDITFORMAT")
     parser.add_option("-r", "--runcfd", dest="runcfd", default=1,
                       help="run CFD simulation after adaptation", metavar="RUNCFD")
 
     (options, args)=parser.parse_args()
 
-    options.partitions = int( options.partitions )
+    options.partitions = int( options.partitions )  
+    options.meditformat = int( options.meditformat )
     options.runcfd = int( options.runcfd )
 
     sys.stdout.write(
@@ -132,8 +135,10 @@ def main():
     )
     
     # Run Mesh Adaptation
-    mesh_adaptation ( options.filename   ,
-                      options.partitions, options.runcfd )
+    mesh_adaptation ( options.filename,
+                      options.partitions, 
+                      options.meditformat, 
+                      options.runcfd )
 
 #: def main()
 
@@ -142,9 +147,10 @@ def main():
 #  Mesh Adaptation Function
 # -------------------------------------------------------------------
 
-def mesh_adaptation( filename       ,
-                     partitions = 0 ,
-                     runCFD = 1 ):
+def mesh_adaptation( filename,
+                     partitions = 0,
+                     meditformat = 1,
+                     runCFD = 1):
     
     if not filename:
         sys.stderr.write("  ## ERROR : a .cfg file must be provided.\n");
@@ -160,7 +166,7 @@ def mesh_adaptation( filename       ,
     config.NUMBER_PART = partitions
     
     # Call CFD to generate a solution
-    SU2.adap.mmg(config, runCFD)
+    SU2.adap.mmg(config, meditformat, runCFD)
     
 #: def mesh_adaptation()
 

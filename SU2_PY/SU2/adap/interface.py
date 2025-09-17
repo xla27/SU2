@@ -27,8 +27,10 @@
 
 import sys, os, shutil
 import subprocess
-import csv
+import time
 import numpy as np
+from struct import unpack, pack, calcsize, iter_unpack
+import itertools
 
 # ------------------------------------------------------------
 #  Setup
@@ -65,349 +67,112 @@ class MeshSolConverter():
         """
         return self.dim
     
-    def SetMeshDict(self, mesh_dict):
+    def SetMeshDict(self, meshDict):
         """
         Setting the mesh dictionary once read either from .su2 or .mesh
         """
-        self.mesh_dict = mesh_dict
+        self.meshDict = meshDict
 
     def GetMeshDict(self):
         """
         Returning the mesh dictionary.
         """
-        return self.mesh_dict
+        return self.meshDict
     
-    def SetMetricDict(self, metric_dict):
+    def SetMetricDict(self, metricDict):
         """
         Setting the dictionary for adaptation metric values.
         """
-        self.metric_dict = metric_dict
+        self.metricDict = metricDict
 
     def GetMetricDict(self):
         """
         Returning the dictionary for adaptation metric values.
         """
-        return self.metric_dict
+        return self.metricDict
         
-    def SetSU2MeditMarkersMap(self, su2_markers_list):
+    def SetSU2MeditMarkersMap(self, su2MarkersList):
         """
         Constructing a unique between SU2 markers and Medit colors.
         """
-        self.markers_map = []
-        for medit_tag, su2_tag in enumerate(su2_markers_list):
+        self.markersMap = []
+        for meditTag, su2Tag in enumerate(su2MarkersList):
             # medit_tag starts from "1" since the tag "0" is left for the volume domain
-            self.markers_map.append([str(medit_tag+1), su2_tag])
+            self.markersMap.append([str(meditTag+1), su2Tag])
 
     def GetSU2MeditMarkersMap(self):
         """
         Returning the map bewteen SU2 markers and Medit colors.
         """
-        if self.markers_map:
-            return self.markers_map
+        if self.markersMap:
+            return self.markersMap
         else:
             raise ValueError('Su2-Medit markers map not set!')  
 
-    def GetSU2Marker(self, medit_tag):
+    def GetSU2Marker(self, meditTag):
         """
         Returning the SU2 markers correspondent to a Medit color.
         """
-        for match in self.markers_map:
-            if match[0] == medit_tag:
+        for match in self.markersMap:
+            if match[0] == meditTag:
                 return match[1]
 
-    def GetMeditMarker(self, su2_tag):
+    def GetMeditMarker(self, su2Tag):
         """
         Returning the Medit color correspondent to a SU2 marker.
         """
-        for match in self.markers_map:
-            if match[1] == su2_tag:
+        for match in self.markersMap:
+            if match[1] == su2Tag:
                 return match[0]
 
-    def ReadMeshSU2(self, su2_filename):
+    def ReadMeshSU2(self, su2Filename):
         """ 
         Reads a .su2 mesh file and returns node coordinates, elements, and boundary markers in a dictionary data structure. 
         """
-        with open(su2_filename, "r") as f:
-            lines = f.readlines()
+        meshDict = read_SU2_mesh_ascii(self, su2Filename)
+        return meshDict
 
-        vertices = []
-        elements = []
-        boundaries = {}
-
-        su2_markers_list = []
-        
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
-
-            if line.startswith("%"):
-                i += 1
-                continue
-
-            if line.startswith("NDIME="):
-                dim = int(line.split("=")[1].strip())
-                self.SetDim(dim)
-
-            elif line.startswith("NPOIN="):
-                n_vertices = int(line.split("=")[1].strip())
-                if dim == 2:
-                    for j in range(n_vertices):
-                        x, y = lines[i + 1 + j].split()[:dim]
-                        vertices.append([float(x), float(y)])
-                elif dim == 3:
-                    for j in range(n_vertices):
-                        x, y, z = lines[i + 1 + j].split()[:dim]
-                        vertices.append([float(x), float(y), float(z)])
-                i += n_vertices  # Move index past nodes
-
-            elif line.startswith("NELEM="):
-                n_elements = int(line.split("=")[1].strip())
-                for j in range(n_elements):
-                    elem_type, *id_vert = lines[i + 1 + j].split()[:(dim+2)]
-                    elements.append([int(vert) for vert in id_vert])
-                i += n_elements  # Move index past elements
-
-            elif line.startswith("NMARK="):
-                n_markers = int(line.split("=")[1].strip())
-                for _ in range(n_markers):
-                    i += 1
-                    marker_tag = lines[i].split("=")[1].strip()
-                    su2_markers_list.append(marker_tag)
-                    i += 1
-                    n_faces = int(lines[i].split("=")[1].strip())
-                    boundaries[marker_tag] = []
-                    for j in range(n_faces):
-                        face_type, *id_vert = lines[i + 1 + j].split()
-                        boundaries[marker_tag].append([int(vert) for vert in id_vert])
-                    i += n_faces  # Move index past boundary elements
-
-            i += 1
-
-        mesh_dict = {'Dim': dim, 'Vertices': vertices}
-        if int(elem_type) == 5:
-            mesh_dict['Triangles'] = elements
-        if int(elem_type) == 10:
-            mesh_dict['Tetrahedra'] = elements
-
-        # reordering markers in alphabetical orders
-        #boundaries = {key: value for key, value in sorted(boundaries.items())}
-        if int(face_type) == 3:
-            mesh_dict['Edges'] =  boundaries
-        if int(face_type) == 5:
-            mesh_dict['Triangles'] =  boundaries
-
-        self.SetMeshDict(mesh_dict)
-        self.SetSU2MeditMarkersMap(su2_markers_list)
-
-        return mesh_dict
-
-    def ReadSolSU2(self, su2_filename):
+    def ReadSolSU2(self, su2Filename):
         """
         Reads a .csv/.dat SU2 solution file to obtain the metric. 
         """
-        metric_dict = {}
-
-        if '.dat' in su2_filename:
-            metric_dict = read_SU2_restart_binary(su2_filename)
-        elif '.csv' in su2_filename:
-            metric_dict = read_SU2_restart_ascii(su2_filename) 
+        if '.dat' in su2Filename:
+            metricDict = read_SU2_restart_binary(su2Filename)
+        elif '.csv' in su2Filename:
+            metricDict = read_SU2_restart_ascii(su2Filename) 
         
-        self.SetMetricDict(metric_dict)
+        self.SetMetricDict(metricDict)
 
-        return metric_dict
+        return metricDict
     
-    def ReadMeshMedit(self, medit_filename):
+    def ReadMeshMedit(self, meditFilename):
         """ 
-        Reads a .mesh file and returns node coordinates, elements, and boundary markers  in a dictionary data structure. 
+        Reads a .mesh/b file and returns node coordinates, elements, and boundary markers  in a dictionary data structure. 
         """
-        with open(medit_filename, "r") as f:
-            lines = f.readlines()
+        if meditFilename.endswith('mesh'):
+            meshDict = read_medit_mesh_ascii(self, meditFilename)
+        elif meditFilename.endswith('meshb'):
+            meshDict = read_medit_mesh_binary(self, meditFilename, verbose=self.verbose)
+        return meshDict
 
-        dim = None
-        vertices = []
-        elements = []
-        boundaries = {}
-
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
-
-            if line.startswith("Dimension"):
-                dim = int(line.split()[1])
-                self.SetDim(dim)
-
-            elif line.startswith("Vertices"):
-                print(line)
-                print(lines[i+1])
-                n_vert = int(lines[i+1])
-                if dim == 2:
-                    for j in range(n_vert):
-                        x, y, id_dom = lines[i + 2 + j].split()
-                        vertices.append([float(x), float(y)])
-                elif dim == 3:
-                    for j in range(n_vert):
-                        x, y, z, id_dom = lines[i + 2 + j].split()
-                        vertices.append([float(x), float(y), float(z)])
-                    
-                i += n_vert  # Move index past nodes
-
-            elif (line.startswith("Triangles") and dim == 2) or (line.startswith("Tetrahedra") and dim == 3):
-                n_elements = int(lines[i+1])
-                elements = [None]*n_elements
-                for j in range(n_elements):
-                    elem_data = list(map(int, lines[i + 2 + j].split()))
-                    elem_data = [elem-1 for elem in elem_data]
-                    elements[j] = elem_data[:-1]  # Last column is a region marker
-                i += n_elements  # Move index past elements             
-
-            elif (line.startswith("Edges") and dim == 2) or (line.startswith("Triangles") and dim == 3):
-                # These define boundary markers
-                n_faces = int(lines[i+1])
-                for j in range(n_faces):
-                    face_data = list(map(int, lines[i + 2 + j].split()))
-                    marker = str(face_data[-1])  # Last column is the boundary marker
-                    face_data = [face - 1 for face in face_data[:-1]]
-                    if marker not in boundaries.keys():
-                        boundaries[marker] = []
-                    boundaries[marker].append(face_data)  # Store only connectivity
-                i += n_faces  # Move index past boundary elements
-
-            i += 1
-
-        print("Checking for surplus points")
-
-        PointIDs = np.array(range(n_vert), dtype=int)
-        elements = np.array(elements, dtype=int)
-        isIn = np.isin(PointIDs, elements)
-        whichAreSurplusPoints = np.where(isIn == False)[0]
-        
-        if (len(whichAreSurplusPoints) > 0):
-            print("There are surplus points in mesh file for unknown reasons.")
-            print("Surplus points:", whichAreSurplusPoints)
-            print("Deleting it and then fix connectivity...")
-            SubtractIDs = np.zeros((n_vert, ), dtype=int)
-            for iPoint in whichAreSurplusPoints:
-                IDsOver = np.where(PointIDs > iPoint)[0]
-                SubtractIDs[IDsOver] += 1
-            
-            # Now I can just fix the connectivity
-            elements -= SubtractIDs[elements]
-            for marker in boundaries.keys():
-                markerData = np.array(boundaries[marker], dtype=int)
-                markerData -= SubtractIDs[markerData]
-                boundaries[marker] = markerData
-
-            
-            whichAreSurplusPointsReverse = np.sort(whichAreSurplusPoints)[::-1]
-            for iPoint in whichAreSurplusPointsReverse:
-                # Remove from the list of vertices but in reverse order
-                vertices.pop(iPoint)
-
-        mesh_dict = {'Dim': dim, 'Vertices': vertices}
-        if dim == 2:
-            mesh_dict['Triangles'] = elements
-        if dim == 3:
-            mesh_dict['Tetrahedra'] = elements
-
-        # reordering markers in alphabetical orders
-        if dim == 2:
-            mesh_dict['Edges'] =  boundaries
-        if dim == 3:
-            mesh_dict['Triangles'] =  boundaries
-
-        self.SetMeshDict(mesh_dict)
-
-        return mesh_dict
-
-    def WriteMeshSU2(self, su2_filename):
+    def WriteMeshSU2(self, su2Filename):
         """ 
         Writes a .su2 mesh file from given mesh data. 
         """
-        mesh = self.GetMeshDict()
-        dim = mesh['Dim']
-        vertices = mesh["Vertices"]
-        if dim == 2:
-            elements = mesh['Triangles']
-            elem_type = 5
-            boundaries = mesh['Edges']
-            face_type = 3
-        if dim == 3:
-            elements = mesh['Tetrahedra']
-            elem_type = 10
-            boundaries = mesh['Triangles']
-            face_type = 5
-
-
-        with open(su2_filename, "w") as f:
-            f.write("NDIME= {}\n".format(dim))
-
-            f.write("NELEM= {}\n".format(len(elements)))
-            for i, elem in enumerate(elements):
-                f.write("{} {} {}\n".format(elem_type, " ".join(map(str, elem)), i))
-
-            f.write("NPOIN= {}\n".format(len(vertices)))
-            for i, node in enumerate(vertices):
-                f.write("{} {}\n".format(" ".join(map(str, node)), i))
-
-            f.write("NMARK= {}\n".format(len(boundaries)))
-            for medit_tag in boundaries.keys():
-                f.write("MARKER_TAG= {}\n".format(self.GetSU2Marker(medit_tag)))
-                f.write("MARKER_ELEMS= {}\n".format(len(boundaries[medit_tag])))
-                for face in boundaries[medit_tag]:
-                    f.write("{} {}\n".format(face_type, " ".join(map(str, face))))
-
+        write_su2_mesh_ascii(self, su2Filename)
         return
     
-    def WriteMeshMedit(self, medit_filename):
+    def WriteMeshMedit(self, meditFilename):
         """ 
-        Writes a .mesh mesh file from given mesh data. 
+        Writes a .mesh/b mesh file from given mesh data. 
         """
-        mesh = self.GetMeshDict()
-        dim = mesh['Dim']
-        vertices = mesh['Vertices']
-        if dim == 2:
-            elements = mesh['Triangles']
-            boundaries = mesh['Edges']
-        if dim == 3:
-            elements = mesh['Tetrahedra']
-            boundaries = mesh['Triangles']
-
-        with open(medit_filename, "w") as f:
-            f.write("MeshVersionFormatted 2\n")
-            f.write("Dimension {}\n".format(mesh['Dim']))
-            
-            # Write nodes
-            f.write("\nVertices \n{}\n".format(len(mesh['Vertices'])))
-            for vert in vertices:
-                f.write(" ".join(map(str, vert[:dim])) + " 0\n")  # 0 is the default region ID
-            
-            # Write elements (assume triangles for 2D, tetrahedra for 3D)
-            if dim == 2:
-                f.write("\nTriangles \n{}\n".format(len(elements)))
-            elif dim == 3:
-                f.write("\nTetrahedra \n{}\n".format(len(elements)))
-            
-            for elem in elements:
-                elem = [el + 1 for el in elem]
-                f.write(" ".join(map(str, elem)) + " 0\n")  # Last value is a region ID
-            
-            # Write boundary elements correctly
-            if boundaries:
-                if dim == 2:
-                    f.write("\nEdges \n{}\n".format(sum(len(faces) for faces in boundaries.values())))
-                elif dim == 3:
-                    f.write("\nTriangles \n{}\n".format(sum(len(faces) for faces in boundaries.values())))
-                
-                for su2_tag in boundaries.keys():
-                    for face in boundaries[su2_tag]:
-                        face = [fa + 1 for fa in face]
-                        f.write(" ".join(map(str, face)) + " {}\n".format(self.GetMeditMarker(su2_tag)))
-
-            f.write("\nEnd\n")
-        
+        if meditFilename.endswith('.mesh'):
+            write_medit_mesh_ascii(self, meditFilename)
+        elif meditFilename.endswith('.meshb'):
+            write_medit_mesh_binary(self, meditFilename, verbose=self.verbose)
         return
 
-    def WriteSolMedit(self, medit_filename):
+    def WriteSolMedit(self, meditFilename):
         """ 
         Writes a .sol Medit file from given metric data. 
         """
@@ -430,72 +195,72 @@ class MeshSolConverter():
             sol_data = np.hstack((sol_data, metric_dict['Metric_yz'][:,np.newaxis]))
             sol_data = np.hstack((sol_data, metric_dict['Metric_zz'][:,np.newaxis]))
 
-        np.savetxt(medit_filename, sol_data, delimiter=' ', header=header, footer=footer, comments='', fmt='%1.5e')
+        np.savetxt(meditFilename, sol_data, delimiter=' ', header=header, footer=footer, comments='', fmt='%1.5e')
         
         return
     
-    def SU2ToMeditMesh(self, su2_filename, medit_filename):
+    def SU2ToMeditMesh(self, su2Filename, meditFilename):
         """
         Full mesh file conversion (reading-writing) from SU2 to Medit
         """
-        self.ReadMeshSU2(su2_filename)
-        self.WriteMeshMedit(medit_filename)
+        self.ReadMeshSU2(su2Filename)
+        self.WriteMeshMedit(meditFilename)
         if self.verbose:
-            print(f"Converted {su2_filename} to {medit_filename}")
+            print(f"Converted {su2Filename} to {meditFilename}")
 
-    def SU2ToMeditSol(self, su2_filename, medit_filename):
+    def SU2ToMeditSol(self, su2Filename, meditFilename):
         """
         Full sol file conversion (reading-writing) from SU2 to Medit
         """
-        self.ReadSolSU2(su2_filename)
-        self.WriteSolMedit(medit_filename)
+        self.ReadSolSU2(su2Filename)
+        self.WriteSolMedit(meditFilename)
         if self.verbose:
-            print(f"Converted {su2_filename} to {medit_filename}")
+            print(f"Converted {su2Filename} to {meditFilename}")
 
-    def MeditToSU2Mesh(self, medit_filename, su2_filename):
+    def MeditToSU2Mesh(self, meditFilename, su2Filename):
         """
         Full mesh file conversion (reading-writing) from Medit to SU2
         """
-        self.ReadMeshMedit(medit_filename)
-        self.WriteMeshSU2(su2_filename)
+        self.ReadMeshMedit(meditFilename)
+        self.WriteMeshSU2(su2Filename)
         if self.verbose:
-            print(f"Converted {medit_filename} to {su2_filename}")
+            print(f"Converted {meditFilename} to {su2Filename}")
 
-    def WriteParamFile(self, config_mmg, mesh_filename):
+    def WriteParamFile(self, configMmg, meshFilename):
         """
         Writing the .mmg2d/.mmg3d parameter file if required. 
         """
-        param_required = isinstance(config_mmg['hausd'], dict)
+        param_required = isinstance(configMmg['hausd'], dict)
         if param_required:
-            mesh = self.GetMeshDict()
-            dim = mesh['Dim']
+            meshDict = self.GetMeshDict()
+            dim = meshDict['Dim']
             if dim == 2:
-                boundaries = mesh['Edges']
+                boundaries = meshDict['Edges']
                 elem_type = 'Edges'
                 mmg_ext = '.mmg2d'
             if dim == 3:
-                boundaries = mesh['Triangles']
+                boundaries = meshDict['Triangles']
                 elem_type = 'Triangles'
                 mmg_ext = '.mmg3d'
 
-            param_filename = mesh_filename + mmg_ext
+            param_filename = meshFilename + mmg_ext
             with open(param_filename, 'w') as f:
                 f.write('Parameters\n')
                 f.write(str(len(boundaries.keys()))+'\n')
                 f.write('\n')
 
-                if len(boundaries.keys()) != len(config_mmg['hausd'].keys()):
+                if len(boundaries.keys()) != len(configMmg['hausd'].keys()):
                     print('WARNING: Different number of markers between SU2 (%i) mesh and MMG parameters (%i). ' \
                                   'For unspecified markers, HAUSD = 0.01 is assumed.' %
-                                   (len(boundaries.keys()), len(config_mmg['hausd'].keys())))
+                                   (len(boundaries.keys()), len(configMmg['hausd'].keys())))
                 
-                for su2_tag in config_mmg['hausd'].keys():
+                for su2_tag in configMmg['hausd'].keys():
                     f.write('%s %s %1.2e %1.2e %1.2e\n' % 
                             (self.GetMeditMarker(su2_tag), 
                             elem_type, 
-                            config_mmg['hmin'], 
-                            config_mmg['hmax'], 
-                            config_mmg['hausd'][su2_tag]))       
+                            configMmg['hmin'], 
+                            configMmg['hmax'], 
+                            configMmg['hausd'][su2_tag]))       
         
         else:
             pass
@@ -563,6 +328,593 @@ def run_command(Command):
 
     return 
 
+tclock = dict()
+
+def tic(ref=0):
+    global tclock
+    tclock[ref] = time.time()
+
+
+def toc(ref=0):
+    global tclock
+    return format(time.time()-tclock[ref], "0.2f")+"s"
+
+# ------------------------------------------------------------
+#  Mesh reading
+# ------------------------------------------------------------
+
+def read_SU2_mesh_ascii(mesh, meshFilename):
+    """ 
+    Reads a .su2 mesh file and returns node coordinates, elements, and boundary markers in a dictionary data structure. 
+    """
+    with open(meshFilename, "r") as f:
+        lines = f.readlines()
+
+    vertices = []
+    elements = []
+    boundaries = {}
+
+    su2_markers_list = []
+    
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+
+        if line.startswith("%"):
+            i += 1
+            continue
+
+        if line.startswith("NDIME="):
+            dim = int(line.split("=")[1].strip())
+            mesh.SetDim(dim)
+
+        elif line.startswith("NPOIN="):
+            n_vertices = int(line.split("=")[1].strip())
+            if dim == 2:
+                for j in range(n_vertices):
+                    x, y = lines[i + 1 + j].split()[:dim]
+                    vertices.append([float(x), float(y)])
+            elif dim == 3:
+                for j in range(n_vertices):
+                    x, y, z = lines[i + 1 + j].split()[:dim]
+                    vertices.append([float(x), float(y), float(z)])
+            i += n_vertices  # Move index past nodes
+
+        elif line.startswith("NELEM="):
+            n_elements = int(line.split("=")[1].strip())
+            for j in range(n_elements):
+                elem_type, *id_vert = lines[i + 1 + j].split()[:(dim+2)]
+                elements.append([int(vert) for vert in id_vert])
+            i += n_elements  # Move index past elements
+
+        elif line.startswith("NMARK="):
+            n_markers = int(line.split("=")[1].strip())
+            for _ in range(n_markers):
+                i += 1
+                marker_tag = lines[i].split("=")[1].strip()
+                su2_markers_list.append(marker_tag)
+                i += 1
+                n_faces = int(lines[i].split("=")[1].strip())
+                boundaries[marker_tag] = []
+                for j in range(n_faces):
+                    face_type, *id_vert = lines[i + 1 + j].split()
+                    boundaries[marker_tag].append([int(vert) for vert in id_vert])
+                i += n_faces  # Move index past boundary elements
+
+        i += 1
+
+    if int(elem_type) != 5 and int(elem_type) != 10:
+        raise Exception('The .su2 mesh file containes volume elements different from triangles/tetrahedra')
+
+    meshDict = {'Dim': dim, 'Vertices': vertices}
+    if int(elem_type) == 5:
+        meshDict['Triangles'] = elements
+    if int(elem_type) == 10:
+        meshDict['Tetrahedra'] = elements
+
+    # reordering markers in alphabetical orders
+    #boundaries = {key: value for key, value in sorted(boundaries.items())}
+    if int(face_type) == 3:
+        meshDict['Edges'] =  boundaries
+    if int(face_type) == 5:
+        meshDict['Triangles'] =  boundaries
+
+    mesh.SetMeshDict(meshDict)
+    mesh.SetSU2MeditMarkersMap(su2_markers_list)
+
+    return meshDict
+
+
+def read_medit_mesh_ascii(mesh, meshFilename):
+
+    with open(meshFilename, "r") as f:
+        lines = f.readlines()
+
+    dim = None
+    vertices = []
+    elements = []
+    boundaries = {}
+
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+
+        if line.startswith("Dimension"):
+            dim = int(line.split()[1])
+            mesh.SetDim(dim)
+
+        elif line.startswith("Vertices"):
+            print(line)
+            print(lines[i+1])
+            nvert = int(lines[i+1])
+            if dim == 2:
+                for j in range(nvert):
+                    x, y, id_dom = lines[i + 2 + j].split()
+                    vertices.append([float(x), float(y)])
+            elif dim == 3:
+                for j in range(nvert):
+                    x, y, z, id_dom = lines[i + 2 + j].split()
+                    vertices.append([float(x), float(y), float(z)])
+                
+            i += nvert  # Move index past nodes
+
+        elif (line.startswith("Triangles") and dim == 2) or (line.startswith("Tetrahedra") and dim == 3):
+            nelem = int(lines[i+1])
+            elements = [None]*nelem
+            for j in range(nelem):
+                elem = list(map(int, lines[i + 2 + j].split()))
+                elem = [el-1 for el in elem]
+                elements[j] = elem[:-1]  # Last column is a region marker
+            i += nelem  # Move index past elements             
+
+        elif (line.startswith("Edges") and dim == 2) or (line.startswith("Triangles") and dim == 3):
+            # These define boundary markers
+            nface = int(lines[i+1])
+            for j in range(nface):
+                face = list(map(int, lines[i + 2 + j].split()))
+                marker = str(face[-1])  # Last column is the boundary marker
+                face = [fa - 1 for fa in face[:-1]]
+                if marker not in boundaries.keys():
+                    boundaries[marker] = []
+                boundaries[marker].append(face)  # Store only connectivity
+            i += nface  # Move index past boundary elements
+
+        i += 1
+
+    meshDict = {'Dim': dim, 'Vertices': vertices}
+    if dim == 2:
+        meshDict['Triangles'] = elements
+    if dim == 3:
+        meshDict['Tetrahedra'] = elements
+
+    # reordering markers in alphabetical orders
+    if dim == 2:
+        meshDict['Edges'] =  boundaries
+    if dim == 3:
+        meshDict['Triangles'] =  boundaries
+
+    meshDict = check_surplus_points(meshDict)
+
+    mesh.SetMeshDict(meshDict)
+
+    return meshDict
+
+
+def read_medit_mesh_binary(mesh, meshFilename, verbose=False):
+    """Reload the mesh with meshFile (binary format).
+
+    INPUT:
+        meshFile :  the path of the .meshb file (binary format)
+    """
+
+    vertices = []
+    elements = []
+    boundaries = {}
+
+    if not meshFilename.endswith(".meshb"):
+        meshFilename += ".meshb"
+
+    tic()
+    f = open(meshFilename, "rb")
+
+    code = read_int(f)
+    if not code:
+        raise Exception("Error in reading the binary file " + meshFilename)
+    
+    meshVersionFormatted = read_int(f)
+    if not meshVersionFormatted in [1, 2]:
+        raise Exception("Wrong MeshVersionFormatted. Should be 1 or 2.")
+    
+    if gmfKwdCod[read_int(f)] != 'GmfDimension':
+        raise Exception("Error in reading the binary file " + meshFilename + ". "
+                        "GmfDimension expected.")
+    
+    nextPos = read_int(f)
+    if verbose: print(f"Next field position: {nextPos}.")
+    dim = read_int(f)
+    if verbose: print("Dimension " + str(dim))
+    if not dim in [2, 3]:
+        raise Exception("Error in reading the binary file " + meshFilename +
+                        ". The dimension should be 2 or 3.")
+    else:
+        mesh.SetDim(dim)
+
+    def readField(f, nfields, title):
+        nextPos = read_int(f)
+        if verbose: print(f"Next field position: {nextPos}.")
+        n = read_int(f)
+        if verbose: print(f"{n} {title}.")
+        code = "i" * nfields * n
+        nbytes = 4 * nfields * n
+        field = np.asarray(unpack(code, f.read(nbytes)))
+        return (n, field.reshape((n, nfields)))
+
+    while True:
+        try:
+            kwdCod = read_int(f)
+        except:
+            if verbose: print("Warning: end of file without the END keyword.")
+            break
+        if verbose: print("Reading "+gmfKwdCod[kwdCod])
+
+        # Vertices
+        if gmfKwdCod[kwdCod] == 'GmfVertices':
+
+            nextPos = read_int(f)
+            if verbose: print(f"Next field position: {nextPos}.")
+
+            nvert = read_int(f)
+            if verbose: print(f"{nvert} Vertices.")
+
+            if meshVersionFormatted == 1:
+                # Float precision
+                code = "="+("f"*dim + "i") * nvert
+                nbytes = calcsize(code)
+            elif meshVersionFormatted == 2:
+                # Double precision
+                code = "="+("d"*dim + "i") * nvert
+                nbytes = calcsize(code)
+
+            vertices = np.asarray(unpack(code, f.read(nbytes)))
+            vertices = vertices.reshape((nvert, dim+1)).tolist()
+            vertices = [vert[:-1] for vert in vertices]
+
+        # Edges
+        elif gmfKwdCod[kwdCod] == 'GmfEdges':
+            nedge, edges = readField(f, 3, gmfKwdCod[kwdCod][3:])
+            edges.tolist()
+
+            if dim == 2:
+                for edg in edges:
+                    if str(edg[-1]) not in boundaries.keys():
+                        boundaries[str(edg[-1])] = []
+                    boundaries[str(edg[-1])].append([ed - 1 for ed in edg[:-1]])
+
+        # Triangles
+        elif gmfKwdCod[kwdCod] == 'GmfTriangles':
+            ntria, triangles = readField(f, 4, gmfKwdCod[kwdCod][3:])
+            triangles.tolist()
+
+            if dim == 2: # triangles as elements
+                elements = [[tr-1 for tr in tria[:-1]] for tria in triangles]
+            elif dim == 3: # triangles as boundaries
+                for tria in triangles:
+                    if str(tria[-1]) not in boundaries.keys():
+                        boundaries[str(tria[-1])] = []
+                    boundaries[str(tria[-1])].append([tr-1 for tr in tria[:-1]])
+
+        # Tetrahedra
+        elif gmfKwdCod[kwdCod] == 'GmfTetrahedra':
+            ntetra, tetrahedra = readField(f, 5, gmfKwdCod[kwdCod][3:])
+            tetrahedra.tolist()
+            elements = [[te-1 for te in tet[:-1]] for tet in tetrahedra]
+
+        # Corners
+        elif gmfKwdCod[kwdCod] == 'GmfCorners':
+            nc, corners = readField(f, 1, gmfKwdCod[kwdCod][3:])
+
+        # End
+        elif gmfKwdCod[kwdCod] == 'GmfEnd':
+            if verbose: print("End of mesh.")
+            break
+
+        else:
+            raise KeyError("Error, field "+gmfKwdCod[kwdCod]+" not supported.")
+        
+    f.close()
+    if verbose: print("Read " + meshFilename + " in "+toc()+".")
+
+    meshDict = {'Dim': dim, 'Vertices': vertices}
+    if dim == 2:
+        meshDict['Triangles'] = elements
+    if dim == 3:
+        meshDict['Tetrahedra'] = elements
+
+    # reordering markers in alphabetical orders
+    if dim == 2:
+        meshDict['Edges'] =  boundaries
+    if dim == 3:
+        meshDict['Triangles'] =  boundaries
+
+    meshDict = check_surplus_points(meshDict)
+
+    mesh.SetMeshDict(meshDict)
+    
+    return mesh
+
+
+def check_surplus_points(meshDict):
+    """
+    Routine to check and eliminate for surplus points in medit mesh generation
+    """
+
+    dim = meshDict['Dim']
+
+    vertices = meshDict['Vertices']
+    nvert = len(vertices)
+
+    if dim == 2:
+        elements   = meshDict['Triangles']
+        boundaries = meshDict['Edges']
+    elif dim == 3:
+        elements   = meshDict['Tetrahedra']
+        boundaries = meshDict['Triangles']
+
+    print("Checking for surplus points")
+
+    PointIDs = np.array(range(nvert), dtype=int)
+    elements = np.array(elements, dtype=int)
+    isIn = np.isin(PointIDs, elements)
+    whichAreSurplusPoints = np.where(isIn == False)[0]
+    
+    if (len(whichAreSurplusPoints) > 0):
+        print("There are surplus points in mesh file for unknown reasons.")
+        print("Surplus points:", whichAreSurplusPoints)
+        print("Deleting it and then fix connectivity...")
+        SubtractIDs = np.zeros((nvert, ), dtype=int)
+        for iPoint in whichAreSurplusPoints:
+            IDsOver = np.where(PointIDs > iPoint)[0]
+            SubtractIDs[IDsOver] += 1
+        
+        # Now I can just fix the connectivity
+        elements -= SubtractIDs[elements]
+        for marker in boundaries.keys():
+            markerData = np.array(boundaries[marker], dtype=int)
+            markerData -= SubtractIDs[markerData]
+            boundaries[marker] = markerData
+
+        whichAreSurplusPointsReverse = np.sort(whichAreSurplusPoints)[::-1]
+        for iPoint in whichAreSurplusPointsReverse:
+            # Remove from the list of vertices but in reverse order
+            vertices.pop(iPoint)
+
+    meshDict['Vertices'] = vertices
+    if dim == 2:
+        meshDict['Triangles'] = elements
+    if dim == 3:
+        meshDict['Tetrahedra'] = elements
+
+    # reordering markers in alphabetical orders
+    if dim == 2:
+        meshDict['Edges'] = boundaries
+    if dim == 3:
+        meshDict['Triangles'] =  boundaries
+
+    return meshDict
+
+
+# ------------------------------------------------------------
+#  Mesh writing
+# ------------------------------------------------------------
+
+def write_su2_mesh_ascii(mesh, meshFilename):
+    """ 
+    Writes a .su2 mesh file from given mesh data. 
+    """
+    meshDict = mesh.GetMeshDict()
+    dim = meshDict['Dim']
+    vertices = meshDict["Vertices"]
+    if dim == 2:
+        elements = meshDict['Triangles']
+        elem_type = 5
+        boundaries = meshDict['Edges']
+        face_type = 3
+    if dim == 3:
+        elements = meshDict['Tetrahedra']
+        elem_type = 10
+        boundaries = meshDict['Triangles']
+        face_type = 5
+
+
+    with open(meshFilename, "w") as f:
+        f.write("NDIME= {}\n".format(dim))
+
+        f.write("NELEM= {}\n".format(len(elements)))
+        for i, elem in enumerate(elements):
+            f.write("{} {} {}\n".format(elem_type, " ".join(map(str, elem)), i))
+
+        f.write("NPOIN= {}\n".format(len(vertices)))
+        for i, node in enumerate(vertices):
+            f.write("{} {}\n".format(" ".join(map(str, node)), i))
+
+        f.write("NMARK= {}\n".format(len(boundaries)))
+        for medit_tag in boundaries.keys():
+            f.write("MARKER_TAG= {}\n".format(mesh.GetSU2Marker(medit_tag)))
+            f.write("MARKER_ELEMS= {}\n".format(len(boundaries[medit_tag])))
+            for face in boundaries[medit_tag]:
+                f.write("{} {}\n".format(face_type, " ".join(map(str, face))))
+
+    return
+
+
+def write_medit_mesh_ascii(mesh, meshFilename):
+    """ 
+    Writes a .mesh mesh file from given mesh data. 
+    """
+    meshDict = mesh.GetMeshDict()
+    dim = meshDict['Dim']
+    vertices = meshDict['Vertices']
+    if dim == 2:
+        elements = meshDict['Triangles']
+        boundaries = meshDict['Edges']
+    if dim == 3:
+        elements = meshDict['Tetrahedra']
+        boundaries = meshDict['Triangles']
+
+    with open(meshFilename, "w") as f:
+        f.write("MeshVersionFormatted 2\n")
+        f.write("Dimension {}\n".format(meshDict['Dim']))
+        
+        # Write nodes
+        f.write("\nVertices \n{}\n".format(len(meshDict['Vertices'])))
+        for vert in vertices:
+            f.write(" ".join(map(str, vert[:dim])) + " 0\n")  # 0 is the default region ID
+        
+        # Write elements (assume triangles for 2D, tetrahedra for 3D)
+        if dim == 2:
+            f.write("\nTriangles \n{}\n".format(len(elements)))
+        elif dim == 3:
+            f.write("\nTetrahedra \n{}\n".format(len(elements)))
+        
+        for elem in elements:
+            elem = [el + 1 for el in elem]
+            f.write(" ".join(map(str, elem)) + " 0\n")  # Last value is a region ID
+        
+        # Write boundary elements correctly
+        if boundaries:
+            if dim == 2:
+                f.write("\nEdges \n{}\n".format(sum(len(faces) for faces in boundaries.values())))
+            elif dim == 3:
+                f.write("\nTriangles \n{}\n".format(sum(len(faces) for faces in boundaries.values())))
+            
+            for su2_tag in boundaries.keys():
+                for face in boundaries[su2_tag]:
+                    face = [fa + 1 for fa in face]
+                    f.write(" ".join(map(str, face)) + " {}\n".format(mesh.GetMeditMarker(su2_tag)))
+
+        f.write("\nEnd\n")
+    
+    return
+    
+
+def write_medit_mesh_binary(mesh, meshFilename, verbose=False):
+    """Save a mesh in the INRIA binary file format"""
+    
+    if not meshFilename.endswith(".meshb"):
+        meshFilename += ".meshb"
+
+    meshDict = mesh.GetMeshDict()
+    dim = meshDict['Dim']
+    vertices = meshDict['Vertices']
+    if dim == 2:
+        elements = meshDict['Triangles']
+        boundaries = meshDict['Edges']
+    if dim == 3:
+        elements = meshDict['Tetrahedra']
+        boundaries = meshDict['Triangles']
+
+    tic()
+    f = open(meshFilename, "wb")
+    f.write(pack("i", 1))  # Write code
+    f.write(pack("i", 2))  # Write MeshVersionFormatted 2
+
+    f.write(pack("i", indicesGmf['GmfDimension']))
+    f.write(pack("i", 20))  # NextPos
+    if not dim in [2, 3]:
+        raise Exception("Error, the mesh dimension is not 2 or 3")
+    f.write(pack("i", dim))
+
+    # Vertices
+    if verbose: print(f"Write {len(vertices)} Vertices.")
+    f.write(pack("i", indicesGmf['GmfVertices']))
+    code = "=" + ("d" * dim + "i") * len(vertices)
+    nextPos = f.tell() + calcsize("ii") + calcsize(code)
+    if verbose: print(f"Next position: {nextPos}")
+    f.write(pack("i", nextPos))
+    vertices = [vert+[0] for vert in vertices] # appending the region ID
+    f.write(pack("i", len(vertices)))
+    data = list(itertools.chain.from_iterable(vertices))
+    f.write(pack(code, *data))
+
+    # Edges
+    if dim == 2:
+        nedge = sum(len(faces) for faces in boundaries.values())
+        if verbose: print(f"Write {nedge} "+"Edges.")
+        f.write(pack("i", indicesGmf['GmfEdges']))
+        code = "i" * 3 * nedge
+
+        nextPos = f.tell()+calcsize(code)+calcsize("ii")
+        if verbose: print(f"Next position: {nextPos}")
+        f.write(pack("i", nextPos))  # NulPos
+        f.write(pack("i", nedge))
+        edges = []
+        for su2_tag in boundaries.keys():
+            for edg in boundaries[su2_tag]:
+                edges.append([ed+1 for ed in edg] + [int(mesh.GetMeditMarker(su2_tag))])
+        data = list(itertools.chain.from_iterable(edges))
+        f.write(pack(code, *data))
+
+    # Triangles
+    if dim == 2: # triangles as elements
+        ntria = len(elements)
+    elif dim == 3: # triangles as boundaries
+        ntria = sum(len(faces) for faces in boundaries.values())
+
+    if verbose: print(f"Write {ntria} "+"Triangles.")
+    f.write(pack("i", indicesGmf['GmfTriangles']))
+    code = "i" * 4 * ntria
+
+    nextPos = f.tell()+calcsize(code)+calcsize("ii")
+    if verbose: print(f"Next position: {nextPos}")
+    f.write(pack("i", nextPos))  # NulPos
+    f.write(pack("i", ntria))
+    triangles = []
+    if dim == 2:
+        for elem in elements:
+            triangles.append([el + 1 for el in elem] + [0])
+    if dim == 3:
+        for su2_tag in boundaries.keys():
+            for tria in boundaries[su2_tag]:
+                triangles.append([tr + 1 for tr in tria] +[int(mesh.GetMeditMarker(su2_tag))])   
+
+    data = list(itertools.chain.from_iterable(triangles))
+    f.write(pack(code, *data))
+
+    # Tetrahedra
+    if dim == 3:
+        ntetra = len(elements)
+
+        if verbose: print(f"Write {ntetra} "+"Tetrahedra.")
+        f.write(pack("i", indicesGmf['GmfTetrahedra']))
+        code = "i" * 5 * ntetra
+
+        nextPos = f.tell()+calcsize(code)+calcsize("ii")
+        if verbose: print(f"Next position: {nextPos}")
+        f.write(pack("i", nextPos))  # NulPos
+        f.write(pack("i", ntetra))
+
+        tetrahedra = []
+        for elem in elements:
+            tetrahedra.append([el + 1 for el in elem] + [0])
+
+        data = list(itertools.chain.from_iterable(tetrahedra))
+        f.write(pack(code, *data))
+
+    # End
+    f.write(pack("i", indicesGmf['GmfEnd']))
+    nextPos = f.tell()+calcsize("i")
+    # Final size
+    f.write(pack("i",nextPos))
+    f.close()
+
+    if verbose: print("Wrote "+meshFilename+" in "+toc()+".")
+
+    return
+
+
+# ------------------------------------------------------------
+#  Restart reading
+# ------------------------------------------------------------
 
 CGNS_STRING_SIZE = 33  # Fixed string size per CGNS standard
 
@@ -668,3 +1020,113 @@ def read_SU2_restart_ascii(filename):
             exit()
 
     return metric_dict
+
+
+# ------------------------------------------------------------
+#  Other utilities for I/O
+# ------------------------------------------------------------
+def read_int(f):
+    return unpack("i", f.read(4))[0]
+
+
+def next_line(f):
+    while True:
+        line = f.readline().strip()
+        if line:
+            break
+    return line
+
+
+def readField(f, nfields, title, verbose):
+    nextPos = read_int(f)
+    print(f"Next field position: {nextPos}.")
+    n = read_int(f)
+    print(f"{n} {title}.")
+    code = "i"*nfields*n
+    nbytes = 4*nfields*n
+    field = np.asarray(unpack(code, f.read(nbytes)))
+    return (n, field.reshape((n, nfields)))
+
+
+gmfKwdCod = ['GmfReserved1',
+            'GmfVersionFormatted',
+            'GmfReserved2',
+            'GmfDimension',
+            'GmfVertices',
+            'GmfEdges',
+            'GmfTriangles',
+            'GmfQuadrilaterals',
+            'GmfTetrahedra',
+            'GmfPentahedra',
+            'GmfHexahedra',
+            'GmfReserved3',
+            'GmfReserved4',
+            'GmfCorners',
+            'GmfRidges',
+            'GmfRequiredVertices',
+            'GmfRequiredEdges',
+            'GmfRequiredTriangles',
+            'GmfRequiredQuadrilaterals',
+            'GmfTangentAtEdgeVertices',
+            'GmfNormalAtVertices',
+            'GmfNormalAtTriangleVertices',
+            'GmfNormalAtQuadrilateralVertices',
+            'GmfAngleOfCornerBound',
+            'GmfReserved5',
+            'GmfReserved6',
+            'GmfReserved7',
+            'GmfReserved8',
+            'GmfReserved9',
+            'GmfReserved10',
+            'GmfReserved11',
+            'GmfReserved12',
+            'GmfReserved13',
+            'GmfReserved14',
+            'GmfReserved15',
+            'GmfReserved16',
+            'GmfReserved17',
+            'GmfReserved18',
+            'GmfReserved19',
+            'GmfReserved20',
+            'GmfReserved21',
+            'GmfReserved22',
+            'GmfReserved23',
+            'GmfReserved24',
+            'GmfReserved25',
+            'GmfReserved26',
+            'GmfReserved27',
+            'GmfReserved28',
+            'GmfReserved29',
+            'GmfReserved30',
+            'GmfBoundingBox',
+            'GmfReserved31',
+            'GmfReserved32',
+            'GmfReserved33',
+            'GmfEnd',
+            'GmfReserved34',
+            'GmfReserved35',
+            'GmfReserved36',
+            'GmfReserved37',
+            'GmfTangents',
+            'GmfNormals',
+            'GmfTangentAtVertices',
+            'GmfSolAtVertices',
+            'GmfSolAtEdges',
+            'GmfSolAtTriangles',
+            'GmfSolAtQuadrilaterals',
+            'GmfSolAtTetrahedra',
+            'GmfSolAtPentahedra',
+            'GmfSolAtHexahedra',
+            'GmfDSolAtVertices',
+            'GmfISolAtVertices',
+            'GmfISolAtEdges',
+            'GmfISolAtTriangles',
+            'GmfISolAtQuadrilaterals',
+            'GmfISolAtTetrahedra',
+            'GmfISolAtPentahedra',
+            'GmfISolAtHexahedra',
+            'GmfIterations',
+            'GmfTime',
+            'GmfReserved38']
+
+indicesGmf = dict([(value, i) for i, value in enumerate(gmfKwdCod)])
