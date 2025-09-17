@@ -609,7 +609,7 @@ def read_medit_mesh_binary(mesh, meshFilename, verbose=False):
             tetrahedra.tolist()
             elements = [[te-1 for te in tet[:-1]] for tet in tetrahedra]
 
-        # Corners
+        # Fields that need to be read but not saved
         elif (gmfKwdCod[kwdCod] == 'GmfCorners'          or 
               gmfKwdCod[kwdCod] == 'GmfRequiredVertices' or
               gmfKwdCod[kwdCod] == 'GmfRequiredEdges'    or
@@ -617,6 +617,24 @@ def read_medit_mesh_binary(mesh, meshFilename, verbose=False):
               gmfKwdCod[kwdCod] == 'GmfRequiredTriangles'):
             _, _ = readField(f, 1, gmfKwdCod[kwdCod][3:])
 
+        elif (gmfKwdCod[kwdCod] == 'GmfNormalAtVertices' or 
+              gmfKwdCod[kwdCod] == 'GmfTangentAtVertices'):
+            _, _ = readField(f, 1, gmfKwdCod[kwdCod][3:])
+
+
+        elif (gmfKwdCod[kwdCod] == 'GmfNormals' or
+              gmfKwdCod[kwdCod] == 'GmfTangents'):
+            nextPos = read_int(f)
+            if verbose: print(f"Next field position: {nextPos}.")
+            nvn = read_int(f)
+            if verbose: print(f"{nvn} Normals.")
+            if meshVersionFormatted == 1:
+                code = "f"*(3*nvn)
+                nbytes = calcsize(code)
+            else:
+                code = "d"*(3*nvn)
+                nbytes = calcsize(code)
+            _ = np.asarray(unpack(code, f.read(nbytes)))
 
         # End
         elif gmfKwdCod[kwdCod] == 'GmfEnd':
