@@ -293,13 +293,13 @@ def mmg(config, meditformat, runCFD = True):
             solfile = config_cfd['RESTART_FILENAME'].replace(sol_ext_cfd,'.sol')
             su2adap.call_mmg(meshin, meshout, solfile, config_mmg)
 
-            mesh_new = fileconverter.ReadMeshMedit(meshout)
+            meshnewdict = fileconverter.ReadMeshMedit(meshout)
 
             #--- Dumping a copy of the adapted mesh 
             fileconverter.WriteMeshSU2(meshout.replace(medit_ext,'.su2'))
 
             #--- Print mesh sizes
-            su2adap.print_adap_table(iSiz, iSub, pyadap_dict, mesh_new.GetMeshDict())
+            su2adap.print_adap_table(iSiz, iSub, pyadap_dict, meshnewdict)
 
             if runCFD:
 
@@ -312,7 +312,7 @@ def mmg(config, meditformat, runCFD = True):
 
                 fileconverter.WriteMeshSU2(meshfil)
 
-                del mesh_new
+                del meshnewdict
 
                 #--- Run su2
 
