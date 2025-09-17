@@ -435,9 +435,9 @@ def create_sensor(solution, sensor_tags):
 
     return sensor_wrap
 
-def print_adap_table(iter, subiter, pyadap_dict, mesh):
+def print_adap_table(iter, subiter, pyadap_dict, meshDict):
     """Print adapted mesh sizes to a table"""
-    dim = mesh['Dim']
+    dim = meshDict['Dim']
     sizes = pyadap_dict['ADAP_SIZES']
     nsubiter = int(pyadap_dict['ADAP_SUBITER'][iter])
 
@@ -459,14 +459,14 @@ def print_adap_table(iter, subiter, pyadap_dict, mesh):
         pad_nul = ' '*10
         line = f'|{pad_nul}|{pad_nul}'
 
-    nelts = get_mesh_size(mesh)
-    nvert = nelts['Vertices']
-    ntria = nelts['Triangles']
+    nvert = len(meshDict['Vertices'])
     if dim == 2:
-        nedge = nelts['Edges']
+        nedge = sum(len(faces) for faces in meshDict['Edges'].values())
+        ntria = len(meshDict['Triangles'])
         line = f'{line}|    {subiter:<2}    | {nvert:<8} | {ntria:<8} | {nedge:<8} |'
     else:
-        ntetr = nelts['Tetrahedra']
+        ntria = sum(len(faces) for faces in meshDict['Triangles'].values())
+        ntetr = len(meshDict['Tetrahedra'])
         line = f'{line}|    {subiter:<2}    | {nvert:<8} | {ntetr:<8} | {ntria:<8} |'
     print(line)
 
