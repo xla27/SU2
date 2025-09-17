@@ -619,7 +619,7 @@ def read_medit_mesh_binary(mesh, meshFilename, verbose=False):
 
         elif (gmfKwdCod[kwdCod] == 'GmfNormalAtVertices' or 
               gmfKwdCod[kwdCod] == 'GmfTangentAtVertices'):
-            _, _ = readField(f, 1, gmfKwdCod[kwdCod][3:])
+            _, _ = readField(f, 2, gmfKwdCod[kwdCod][3:])
 
 
         elif (gmfKwdCod[kwdCod] == 'GmfNormals' or
@@ -663,7 +663,7 @@ def read_medit_mesh_binary(mesh, meshFilename, verbose=False):
 
     mesh.SetMeshDict(meshDict)
     
-    return mesh
+    return meshDict
 
 
 def check_surplus_points(meshDict):
