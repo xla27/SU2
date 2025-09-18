@@ -265,6 +265,7 @@ def set_mmg_config(config_su2, dim):
     config_mmg = dict()
 
     if 'ADAP_HGRAD' in config_su2: config_mmg['hgrad'] = float(config_su2['ADAP_HGRAD'])
+    if 'ADAP_ANGLE' in config_su2: config_mmg['ar']    = int(config_su2['ADAP_ANGLE'])
 
     config_mmg['dim']     = int(dim)
     config_mmg['hmax']    = float(get_mesh_hmaxs(config_su2)[0])
