@@ -264,6 +264,11 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
   }
 
+  AddVolumeOutput("NORMAL-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
+  AddVolumeOutput("NORMAL-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
+  if (nDim == 3)
+    AddVolumeOutput("NORMAL-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
+
   SetVolumeOutputFieldsScalarPrimitive(config);
 
   //Residuals

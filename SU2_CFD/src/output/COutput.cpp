@@ -1670,11 +1670,16 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
     curGetFieldIndex = 0;
     fieldGetIndexCache.clear();
 
+    vector<int> allPoints;
+    vector<int> allVertices;
+    vector<int> allMarkers;
+    vector<bool> alreadyFound;
+
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
       /*--- We only want to have surface values on solid walls ---*/
 
-      if (config->GetSolid_Wall(iMarker)) {
+      if (config->GetSolid_Wall(iMarker) || config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1683,6 +1688,31 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
           if (geometry->nodes->GetDomain(iPoint)) {
             buildFieldIndexCache = fieldIndexCache.empty();
+            const auto* normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            const auto Area = sqrt(normal[0]*normal[0]+normal[1]*normal[1]+normal[2]*normal[2]);
+            auto index = find(allPoints.begin(), allPoints.end(), iPoint);
+            if( index != allPoints.end()) {
+
+                size_t actualIndex = distance(allPoints.begin(), index);
+
+                if (alreadyFound[actualIndex]) cout << " PORCACCIO " << endl;
+
+                alreadyFound[actualIndex] = true;
+                
+                const auto* normal2 = geometry->vertex[allMarkers[actualIndex]][allVertices[actualIndex]]->GetNormal();
+                const auto Area2 = sqrt(normal2[0]*normal2[0]+normal2[1]*normal2[1]+normal2[2]*normal2[2]);
+                cout << "iPoint = " << iPoint << "\t on marker "<< config->GetMarker_CfgFile_TagBound(allMarkers[actualIndex]) << "\t Normal2 = [" << normal2[0]/Area2 << "\t" << normal2[1]/Area2 << "\t" << normal2[2]/Area2 << "]" << endl;
+                cout << "iPoint = " << iPoint << "\t on marker "<< config->GetMarker_CfgFile_TagBound(iMarker) << "\t Normal = [" << normal[0]/Area << "\t" << normal[1]/Area << "\t" << normal[2]/Area << "]" << endl;
+            } else {
+                allMarkers.push_back(iMarker);
+                allVertices.push_back(iVertex);
+                allPoints.push_back(iPoint);
+                alreadyFound.push_back(false);
+            }
+            SetVolumeOutputValue("NORMAL-X", iPoint, normal[0]/Area);
+            SetVolumeOutputValue("NORMAL-Y", iPoint, normal[1]/Area);
+            if (nDim == 3)
+              SetVolumeOutputValue("NORMAL-Z", iPoint, normal[2]/Area);
             LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
           }
         }
