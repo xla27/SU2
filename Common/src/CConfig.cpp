@@ -3044,6 +3044,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: A mesh adaptation option */
   addPythonOption("ADAP_TOLL");
 
+  /* DESCRIPTION: A mesh adaptation option */
+  addPythonOption("ADAP_ANGLE");
+
   /* END_CONFIG_OPTIONS */
 
 }
