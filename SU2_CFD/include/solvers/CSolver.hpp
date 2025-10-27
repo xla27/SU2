@@ -4390,6 +4390,11 @@ public:
   void CorrectBoundMetric(CGeometry *geometry, const CConfig *config);
 
   /*!
+   * \brief Correct the Metric at boundaries.
+   */
+  void CorrectNaNsBoundMetric(CGeometry *geometry, const CConfig *config);
+
+  /*!
    * \brief Compute the goal-oriented metric.
    * \param[in] solver - Physical definition of the problem.
    * \param[in] geometry - Geometrical definition of the problem.

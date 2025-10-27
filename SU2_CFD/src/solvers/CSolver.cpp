@@ -4964,6 +4964,75 @@ void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
   }// iMarker
 }
 
+void CSolver::CorrectNaNsBoundMetric(CGeometry *geometry, const CConfig *config) {
+  constexpr size_t MAXNMET = 6;
+  const unsigned short nMet = 3*(nDim-1);
+
+  double Basis[MAXNDIM][MAXNDIM] = {0.0};
+  double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+
+  InitiateComms(geometry, config, MPI_QUANTITIES::METRIC);
+  CompleteComms(geometry, config, MPI_QUANTITIES::METRIC);
+
+  for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    const bool solid_wall = config->GetSolid_Wall(iMarker);
+    const bool physical = config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+                          config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+                          config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+                          config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY;
+
+    if (solid_wall || physical) {
+
+      for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+        const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        auto nodes = geometry->nodes;
+
+        if (nodes->GetDomain(iPoint)) {
+          
+          bool fix = false;
+          for(auto iMet = 0; iMet < nMet && !fix; iMet++) {
+            if (isnan(base_nodes->GetMetric(iPoint, iMet))) fix = true;
+          }
+
+          if (fix) {
+            //--- Correct if any of the neighbors belong to the volume
+            unsigned short counter = 0;
+            double met[MAXNMET] = {0.0}, suminvdist = 0.0;
+            for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
+              const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
+              if(!nodes->GetSolidBoundary(jPoint) && !nodes->GetPhysicalBoundary(jPoint)) {
+                const auto dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
+                suminvdist += 1./SU2_TYPE::GetValue(dist);
+                for(auto iMet = 0; iMet < nMet; iMet++) {
+                  met[iMet] += base_nodes->GetMetric(jPoint, iMet)/SU2_TYPE::GetValue(dist);
+                }// iMet
+                counter++;
+              }// if boundary
+            }
+            //--- Get upper triangle
+            switch ( nDim ) {
+              case 2: {
+                A[0][0] = met[0]; A[0][1] = met[1];
+                A[1][0] = met[1]; A[1][1] = met[2];
+                break;
+              }
+              case 3: {
+                A[0][0] = met[0]; A[0][1] = met[1]; A[0][2] = met[2];
+                A[1][0] = met[1]; A[1][1] = met[3]; A[1][2] = met[4];
+                A[2][0] = met[2]; A[2][1] = met[4]; A[2][2] = met[5];
+                break;
+              }
+            }
+            base_nodes->SetMetricMat(iPoint, A, 1.0/suminvdist);
+          }
+        }// if counter
+      }// iVertex
+    }// if KindBC
+  }// iMarker
+}
+
 void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config) {
 
   const unsigned long nPointDomain = geometry->GetnPointDomain();
@@ -5006,9 +5075,12 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
       if (goal) SetMetric(solver, geometry, config, iPoint, weights);
     }
 
-    //--- Apply correction to wall boundary
-    // CorrectBoundMetric(geometry, config);
   }
+
+  //--- Apply correction to wall boundary
+  // CorrectBoundMetric(geometry, config);
+  CorrectNaNsBoundMetric(geometry, config);
+  
 
   //--- Compute Lp-normalization of the metric tensor field
   for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
